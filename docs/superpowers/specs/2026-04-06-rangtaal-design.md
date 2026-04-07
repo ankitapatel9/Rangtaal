@@ -57,6 +57,7 @@ The current season runs every Tuesday, 7:30–9:30 PM, from April 21, 2026 throu
 - All participant capabilities, plus:
 - View and manage all participants
 - Mark offline (Zelle/cash) payments as received
+- **Mark a participant as opted out for a specific month** (and undo it)
 - Compose weekly SMS messages via AI chat + voice
 - Send manual payment reminders to unpaid participants
 - Configure auto payment reminder trigger date
@@ -161,7 +162,31 @@ The current season runs every Tuesday, 7:30–9:30 PM, from April 21, 2026 throu
 - **Profit/Loss summary** — viewable per month or full season
 - Simple ledger view: collected $X, paid $Y, net $Z
 
-### 4.10 Session Cancellation
+### 4.10 Monthly Opt-Out (Admin only)
+
+Sometimes a participant needs to skip a month (travel, illness, etc.) without dropping out of the community. They tell the admin (text, in person, however), and the admin marks them as opted out for that month from the People tab.
+
+**Behavior while opted out:**
+- No payment owed for that month
+- RSVP button is disabled with the message "You're opted out for [Month] — see you in [Next Month]"
+- Skipped from auto + manual payment reminders for that month
+- Skipped from session reminders (day-before / day-of) for that month
+- Still receives session cancellation notices (informational)
+- **Still has full access to tutorial videos** (the opt-out doesn't lock them out of community content)
+- Still has full access to community chat
+- The opt-out auto-expires at the end of the month — they resume normally next month unless re-opted-out
+
+**Admin flow:**
+- People tab → tap participant → "Mark opted out for [Month]" button
+- Optional reason field
+- Confirms → Cloud Function writes to `monthlyOptOuts` collection
+- Undoable by admin from the same screen ("Remove opt-out")
+
+**Participant-facing UI:**
+- Home tab shows a clear banner: "You're opted out for April. See you in May!"
+- No "Pay Now" pressure, no missed payment alerts
+
+### 4.11 Session Cancellation
 - Admin taps a session in the calendar → "Cancel Session"
 - Optional reason field
 - On confirm, Cloud Function:
@@ -297,6 +322,16 @@ venueCosts/
     - amount: number
     - paidAt: timestamp
     - notes: string (optional)
+
+monthlyOptOuts/
+  {optOutId}
+    - userId: string
+    - classId: string
+    - month: "2026-04"
+    - reason: string (optional)
+    - createdAt: timestamp
+    - createdBy: userId (admin who recorded it)
+    - active: boolean   // false if admin removed the opt-out
 
 videos/                          # admin tutorial videos (paywalled)
   {videoId}
@@ -457,6 +492,13 @@ Same as participant, plus:
 - Session cancelled after RSVP → user notified, RSVP removed
 - Past session RSVP attempt → button disabled
 - Concurrent admin cancellation → Firestore transaction prevents double-action
+
+### Monthly Opt-Out
+- User RSVP'd, then admin marks them opted out → existing RSVPs auto-removed for that month
+- User opted out and tries to pay → app shows "You're opted out for [Month]; ask admin to lift the opt-out first"
+- Admin marks user opted out for a month already paid → flag warning, allow override (rare; admin-decided refund)
+- Opted-out user receives a session cancellation notice → still sent (informational only)
+- Auto payment reminder Cloud Function → checks `monthlyOptOuts` and skips opted-out users
 
 ### SMS / Notifications
 - Twilio down → exponential backoff retry, log failures, admin sees alert
