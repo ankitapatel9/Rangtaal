@@ -409,6 +409,8 @@ settings/
 
 ## 7. Screens & Navigation
 
+The app uses **two distinct tab bars**, swapped at runtime based on the user's role. This is cleaner than nesting admin features under a single tab bar with a "More" overflow.
+
 ### Participant Tab Bar (5 tabs)
 - **Home** — Next class card, payment status banner, latest announcement
 - **Schedule** — Calendar of Tuesdays, tap to view/RSVP
@@ -416,22 +418,24 @@ settings/
 - **Chat** — Community group chat
 - **Me** — Profile, payment methods, payment history, notification settings, logout
 
-### Admin Tab Bar (6 tabs)
-Same as participant, plus:
-- **People** — Participant list, search, payment management
-- **Finance** — Revenue, venue costs, P&L
-- **Compose** — AI chat for SMS composition
+### Admin Tab Bar (5 tabs)
+- **Home** — Admin dashboard (RSVPs this week, payments this month, quick actions)
+- **Community** — All participants list with payment status, search, mark Zelle/cash received, monthly opt-out controls
+- **Finance** — Revenue, venue costs, monthly P&L, log venue cost, AI SMS composer entry
+- **Sessions** — Calendar with admin controls (cancel session, attach custom message, view RSVPs)
+- **Profile** — Admin's own profile, settings, auto-reminder trigger date, sign out
 
-(Or restructured to fit 5 tabs with a "More" overflow — final UX decision in branding phase.)
+The Compose (AI SMS) and People-management flows are reachable from the Finance and Community tabs respectively, rather than having dedicated tabs.
 
 ### Key non-tab screens
-- Onboarding (phone verify → name)
-- Session detail
-- Participant detail (admin)
+- Welcome / Onboarding (phone verify → name → "Welcome to Rangtaal")
+- Session detail (with admin actions if applicable)
+- Participant detail (admin, opens from Community tab)
 - Pay Now sheet
 - Video player
-- Media upload sheet
-- AI chat conversation
+- Media upload sheet (Capture the Rhythm)
+- AI chat conversation (Compose with AI)
+- Cancel session confirmation
 
 ---
 
@@ -581,9 +585,36 @@ These are intentionally deferred from v1 but the architecture should not block t
 
 ---
 
-## 14. Next Steps
+## 14. Design References
+
+Visual references for the screens described in this spec live in `docs/designs/` and were generated in Google Stitch (project ID `12751402334591183086`). They are reference mockups, not pixel-perfect specifications — implementation should follow the spirit and brand identity of the designs while adapting layouts to React Native conventions.
+
+| Screen in spec | Reference file |
+|---|---|
+| Login (phone OTP) | `login.png` |
+| Welcome / name entry | `welcome-to-rangtaal.png` |
+| Participant Home | `participant-home.png`, `vibrant-participant-home.png` |
+| Schedule & RSVP | `schedule-rsvp.png`, `vibrant-schedule-rsvp.png` |
+| Session Details | `session-details.png` |
+| Pay Now Flow | `pay-now-v1.png` |
+| Video Library (paywalled) | `video-library.png`, `tutorials-media.png` |
+| Community Chat | `community-chat.png` |
+| Upload Media | `upload-media.png` |
+| Profile & Settings | `profile-settings.png` *(needs +1 fix and tab bar fix)* |
+| Admin People Management | `admin-people-payments.png` |
+| Admin Finance / P&L | `finance-pl-v2.png` |
+| AI SMS Composer | `ai-sms-composer.png` |
+
+**Known design inconsistencies to resolve before or during build:**
+- Login and Profile screens show country code `+91` instead of `+1`
+- Profile screen has a non-canonical tab bar (Home/Events/Passes/Profile) that doesn't match either the participant or admin tab bar
+- Welcome screen copy says "Welcome to the Maandli" — should reference Rangtaal as the brand (Maandli is a Garba dance type, not the brand name)
+- Finance numbers in mockups are placeholder values (~$482k profit) far higher than the real ~$1,800/month scale
+- Several screens (cancel session flow, monthly opt-out admin flow, video player) are not yet designed and will need to be added during implementation
+
+## 15. Next Steps
 
 1. **User reviews this spec** and approves or requests changes
-2. **Branding & UX phase** — Use Google Stitch to design key screens, define color palette, typography, and component library
+2. **Branding & UX phase** — Continue iterating on Stitch designs in parallel with implementation
 3. **Implementation plan** — Use the writing-plans skill to break this spec into a step-by-step build plan
 4. **Build v1** — Following the implementation plan, with iterative review checkpoints
