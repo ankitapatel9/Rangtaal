@@ -262,60 +262,121 @@ git commit -m "chore: configure EAS Dev Build"
 
 ---
 
-## Task 4: Create a Firebase project (manual, in Firebase Console)
+## Task 4: Create the Firebase project and apps via CLI
 
-> **This is a manual external task — no code.** Mark each box once done.
+> Most of this task uses `firebase-tools` and `gcloud`. Only the steps marked **(Console)** require the browser, and each is a single click or form — they can't be automated.
 
-- [ ] **Step 1: Open the Firebase Console**
+- [ ] **Step 1: Install the Firebase CLI and gcloud (if not already)**
 
-Visit https://console.firebase.google.com and click **Add project**.
+```bash
+npm install -g firebase-tools
+firebase --version
 
-- [ ] **Step 2: Name the project `rangtaal-prod`**
+brew install --cask google-cloud-sdk 2>/dev/null || true
+gcloud --version
+```
+Expected: both print a version. If you already have these, the commands are no-ops.
 
-Skip Google Analytics (we don't need it for v1).
+- [ ] **Step 2: Log in to both CLIs**
 
-- [ ] **Step 3: Enable Phone Authentication**
+```bash
+firebase login
+gcloud auth login
+gcloud auth application-default login
+```
+Each opens a browser for OAuth. Accept.
 
-In the project sidebar: **Build → Authentication → Get Started → Sign-in method → Phone → Enable → Save**.
+- [ ] **Step 3: Create the Firebase project**
 
-- [ ] **Step 4: Create a Firestore database**
+```bash
+firebase projects:create rangtaal-prod --display-name "Rangtaal"
+```
+Expected: `✔ Your Google Cloud Platform project "Rangtaal" is ready.`
+If the ID is taken, append a suffix (e.g., `rangtaal-prod-2026`) and use that in every subsequent command and in `.firebaserc` (Task 21).
 
-**Build → Firestore Database → Create database → Production mode → us-central1 (or closest to Roselle, IL)**.
+- [ ] **Step 4: Point the CLI at the new project**
 
-- [ ] **Step 5: Add an iOS app to the Firebase project**
+```bash
+firebase use rangtaal-prod
+gcloud config set project rangtaal-prod
+```
 
-Project Settings → **Your apps → iOS** → Bundle ID: `com.rangtaal.app` → Register → **Download `GoogleService-Info.plist`** and save it to a temporary location.
+- [ ] **Step 5: Create the Firestore database via gcloud**
 
-- [ ] **Step 6: Add an Android app to the Firebase project**
+```bash
+gcloud firestore databases create \
+  --location=us-central1 \
+  --type=firestore-native \
+  --project=rangtaal-prod
+```
+Expected: `Successfully created the Firestore database`. (`us-central1` is the closest multi-region to Roselle, IL.)
 
-Project Settings → **Your apps → Android** → Package name: `com.rangtaal.app` → Register → **Download `google-services.json`** and save it to a temporary location.
+- [ ] **Step 6: Register the iOS app and capture its App ID**
 
-- [ ] **Step 7: Add a test phone number for development**
+```bash
+firebase apps:create IOS "Rangtaal iOS" \
+  --bundle-id com.rangtaal.app \
+  --project rangtaal-prod
+```
+Expected: prints `App ID: 1:<numbers>:ios:<hash>`. Copy that App ID — you'll need it in Step 8.
 
-Authentication → **Sign-in method → Phone → "Phone numbers for testing"** → Add `+1 555-555-5555` with verification code `123456`. This lets you sign in during development without burning real SMS.
+- [ ] **Step 7: Register the Android app and capture its App ID**
+
+```bash
+firebase apps:create ANDROID "Rangtaal Android" \
+  --package-name com.rangtaal.app \
+  --project rangtaal-prod
+```
+Expected: prints `App ID: 1:<numbers>:android:<hash>`. Copy it — you'll need it in Step 9.
+
+- [ ] **Step 8: Download `GoogleService-Info.plist` directly into the project root**
+
+Replace `<IOS_APP_ID>` with the iOS App ID from Step 6:
+```bash
+cd /Users/ankipatel/Documents/GitHub/Rangtaal
+firebase apps:sdkconfig IOS <IOS_APP_ID> --out GoogleService-Info.plist
+```
+Expected: file is written to the project root.
+
+- [ ] **Step 9: Download `google-services.json` directly into the project root**
+
+Replace `<ANDROID_APP_ID>` with the Android App ID from Step 7:
+```bash
+firebase apps:sdkconfig ANDROID <ANDROID_APP_ID> --out google-services.json
+```
+Expected: file is written to the project root.
+
+- [ ] **Step 10: Enable Phone Authentication (Console — one click)**
+
+Open https://console.firebase.google.com/project/rangtaal-prod/authentication/providers and click **Phone → Enable → Save**. (No public API exposes this toggle, so this is the one unavoidable click.)
+
+- [ ] **Step 11: Add a test phone number (Console — one form)**
+
+On the same page, scroll to **Phone numbers for testing → Add phone number**:
+- Phone: `+1 555-555-5555`
+- Code: `123456`
+
+This lets you sign in during development without sending real SMS.
 
 ---
 
-## Task 5: Place Firebase config files into the project
+## Task 5: Wire the Firebase config files into Expo
 
 **Files:**
-- Create: `GoogleService-Info.plist`, `google-services.json`
 - Modify: `.gitignore`, `app.json`
 
-- [ ] **Step 1: Copy the Firebase config files into the project root**
+> Task 4 already dropped `GoogleService-Info.plist` and `google-services.json` into the project root. This task just gitignores them and tells Expo where they are.
 
-Move `GoogleService-Info.plist` and `google-services.json` from your temporary location into `/Users/ankipatel/Documents/GitHub/Rangtaal/`.
-
-- [ ] **Step 2: Add them to `.gitignore`**
+- [ ] **Step 1: Add them to `.gitignore`**
 
 Append to `.gitignore`:
 ```
-# Firebase config (do not commit secrets)
+# Firebase config (do not commit — contains project secrets)
 GoogleService-Info.plist
 google-services.json
 ```
 
-- [ ] **Step 3: Reference them in `app.json`**
+- [ ] **Step 2: Reference them in `app.json`**
 
 Edit `app.json` and update the iOS/Android sections:
 ```json
@@ -329,11 +390,11 @@ Edit `app.json` and update the iOS/Android sections:
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add .gitignore app.json
-git commit -m "chore: wire firebase config files into expo (gitignored)"
+git commit -m "chore: gitignore firebase config and wire into expo"
 ```
 
 ---
@@ -1755,15 +1816,13 @@ Replace `<your-firebase-project-id>` with the project ID from the Firebase Conso
 }
 ```
 
-- [ ] **Step 5: Install Firebase CLI if not already, then deploy rules**
+- [ ] **Step 5: Deploy the rules**
 
 Run:
 ```bash
-npm install -g firebase-tools
-firebase login
 firebase deploy --only firestore:rules
 ```
-Expected: `✔ Deploy complete!`
+Expected: `✔ Deploy complete!` (Firebase CLI and login were already set up in Task 4.)
 
 - [ ] **Step 6: Commit**
 
