@@ -50,7 +50,16 @@ module.exports = () => ({
     [
       "expo-build-properties",
       {
-        ios: { useFrameworks: "static" },
+        ios: {
+          useFrameworks: "static",
+          // Work around expo/expo#39233: on SDK 54 with newArchEnabled +
+          // useFrameworks: static, the default prebuilt React Native pods
+          // don't expose RCTBridgeModule as a modular header, which breaks
+          // @react-native-firebase's Objective-C modules (RNFBFirestore,
+          // RNFBApp). Building RN from source sidesteps that by letting
+          // CocoaPods generate the modulemap with the header exposed.
+          buildReactNativeFromSource: true,
+        },
       },
     ],
     "@react-native-firebase/app",
