@@ -30,6 +30,21 @@ module.exports = () => ({
     bundleIdentifier: "com.rangtaal.app",
     googleServicesFile:
       process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
+    // Firebase iOS phone auth SDK asserts that a URL scheme matching
+    // GoogleService-Info.plist's REVERSED_CLIENT_ID is registered, even
+    // for apps that never call Google Sign-In. Without it,
+    // PhoneAuthProvider.verifyPhoneNumber triggers a fatal EXC_BREAKPOINT
+    // before it even checks whether the number is a test number.
+    // See: expo/expo#39233-adjacent issues; Firebase iOS SDK internals.
+    infoPlist: {
+      CFBundleURLTypes: [
+        {
+          CFBundleURLSchemes: [
+            "com.googleusercontent.apps.560643723293-c2r4ktqn44fdf3kmm3m2ung5dfronnj2",
+          ],
+        },
+      ],
+    },
   },
   android: {
     package: "com.rangtaal.app",
