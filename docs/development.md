@@ -13,14 +13,20 @@ JavaScript with fast refresh.
 npm start
 ```
 
-Runs `expo start --tunnel`. Wait ~10 seconds for the QR code. Scan it with the
-iPhone Camera app and tap the yellow notification; the dev client opens with
-the Metro URL baked in. Edit any file under `app/` or `src/`, save, and the
-change appears on the phone in under a second.
+Runs `scripts/start-dev.sh`, which starts an ngrok tunnel and Metro bundler.
+Wait ~10 seconds for the tunnel URL to print. On the phone, open the Rangtaal
+dev client and tap **"Enter URL manually"**, then paste the `https://...ngrok-free.app`
+URL. Subsequent launches remember the last URL.
 
-Tunnel mode routes traffic through Expo's ngrok-backed relay so it works
-regardless of LAN topology, Wi-Fi vs Ethernet, router AP isolation, or
-Tailscale. If the tunnel is flaky, fall back to `expo start --lan`.
+Edit any file under `app/` or `src/`, save, and the change appears on the
+phone in under a second via fast refresh.
+
+The tunnel routes traffic through ngrok so it works regardless of LAN topology,
+Wi-Fi vs Ethernet, router AP isolation, or firewall settings.
+
+**Fallback** — if ngrok is down, use `expo start --lan` with both devices on
+the same Wi-Fi. You may need to allow Node through the macOS firewall
+(`/usr/libexec/ApplicationFirewall/socketfilterfw --add $(which node)`).
 
 ### Native loop — runs when a native dependency changes
 
@@ -44,23 +50,34 @@ Build with the pinned `macos-sequoia-15.6-xcode-16.4` image in `eas.json`
 sidesteps both. Use `npm run ios` (which routes through EAS) or
 `npm run build:dev` — never `expo run:ios`.
 
-## First-time EAS Build credential setup
+## First-time setup
 
-The first `eas build` run is interactive. It will prompt for Apple ID
-credentials and offer to generate a development certificate and provisioning
-profile. Answer yes; the Apple team for this project is `G8UYR68V26`. The
-credentials are stored in EAS and reused on subsequent builds.
+1. Run `eas env:pull --environment development` to pull Firebase config files
+   locally. This creates `.env.local` and `.eas/.env/` (both gitignored).
+2. Create symlinks for local config introspection:
+   ```
+   ln -sf .eas/.env/GOOGLE_SERVICES_PLIST GoogleService-Info.plist
+   ln -sf .eas/.env/GOOGLE_SERVICES_JSON google-services.json
+   ```
+3. Run `npm run build:dev` for the first EAS Build. It will prompt for Apple ID
+   credentials and offer to generate a development certificate and provisioning
+   profile. Answer yes; the Apple team is `G8UYR68V26`. Credentials are stored
+   in EAS and reused on subsequent builds.
+4. Install: `eas build:run --latest --platform ios`
+5. Start developing: `npm start`
 
 ## When something breaks
 
-- **`npm start` can't reach the phone** — try `expo start --lan` and the
-  machine's Tailscale IP as a fallback. Worst case, run `expo start` on the
-  same Wi-Fi as the phone.
+- **`npm start` fails on ngrok** — check https://status.ngrok.com/. Fallback:
+  `expo start --lan` on the same Wi-Fi as the phone.
 - **EAS Build fails on fmt/consteval errors** — the Xcode pin has regressed.
   Check that `eas.json` still has `ios.image` set to
   `macos-sequoia-15.6-xcode-16.4` on the `development` profile.
 - **Dev client won't launch or shows a blank screen** — uninstall from the
   phone and run `npm run ios` to rebuild+reinstall a fresh dev client.
+- **`eas build` fails on GoogleService-Info.plist not found** — run
+  `eas env:pull --environment development` to restore the local env files,
+  then recreate the symlinks (step 2 above).
 
 ## What's under the hood
 
@@ -69,5 +86,9 @@ credentials are stored in EAS and reused on subsequent builds.
   `@react-native-firebase` can resolve `RCTBridgeModule` as a modular header
   (expo/expo#39233). Don't remove it without reading
   `memory/project_ios_build_workarounds.md` first.
+- `index.js` re-exports `expo-router/entry` — the dev client binary requests
+  `/index.bundle` from Metro, which needs this file to resolve the entry point.
+- `scripts/start-dev.sh` works around a bug in `@expo/ngrok` by running ngrok
+  directly and passing the tunnel URL to Metro via `EXPO_PACKAGER_PROXY_URL`.
 - The `ios/` folder is gitignored and intentionally absent — EAS Build
   regenerates it in the cloud on every build.
