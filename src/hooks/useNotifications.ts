@@ -13,6 +13,7 @@ export function useNotifications(uid: string | undefined): void {
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
       if (!enabled) return;
 
+      await messaging().registerDeviceForRemoteMessages();
       const token = await messaging().getToken();
       if (token) {
         await firestore().collection("users").doc(uid).update({ fcmToken: token });
