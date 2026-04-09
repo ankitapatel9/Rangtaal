@@ -21,12 +21,21 @@ module.exports = () => ({
   // with the abstract property and trigger a warning that crashes
   // prebuild due to a chalk version mismatch in @expo/config-plugins).
   //
-  // - "rangtaal"                       → deep link scheme used by Expo Router
-  // - "com.googleusercontent.apps..."  → REVERSED_CLIENT_ID required by
-  //                                      Firebase iOS phone auth SDK
+  // ORDER MATTERS: Firebase iOS SDK's reCAPTCHA fallback uses the FIRST
+  // custom URL scheme it finds in CFBundleURLTypes as the return target
+  // from its web view. Putting the REVERSED_CLIENT_ID scheme FIRST means
+  // Firebase's reCAPTCHA callback URL becomes
+  //   com.googleusercontent.apps.xxx://firebaseauth/link?...
+  // which Expo Router does NOT intercept (it only handles rangtaal://).
+  // If rangtaal was first, Firebase's callback would collide with Expo
+  // Router's deep link handler and show "Unmatched Route" instead of
+  // completing auth.
+  //
+  // - REVERSED_CLIENT_ID  → first, for Firebase phone auth reCAPTCHA callback
+  // - "rangtaal"          → deep link scheme for Expo Router navigation
   scheme: [
-    "rangtaal",
     "com.googleusercontent.apps.560643723293-c2r4ktqn44fdf3kmm3m2ung5dfronnj2",
+    "rangtaal",
   ],
   orientation: "portrait",
   icon: "./assets/icon.png",
