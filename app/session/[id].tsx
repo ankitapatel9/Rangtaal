@@ -1,4 +1,6 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useLikes } from "../../src/hooks/useLikes";
 import {
   View,
   Text,
@@ -268,9 +270,11 @@ function AdminCancelSection({ sessionId, adminUid, cancelled }: AdminCancelSecti
 interface TutorialCardProps {
   tutorial: TutorialDoc;
   userPaid: boolean;
+  userId: string;
 }
 
-function TutorialCard({ tutorial, userPaid }: TutorialCardProps) {
+function TutorialCard({ tutorial, userPaid, userId }: TutorialCardProps) {
+  const { count: likeCount, isLiked, toggle: toggleLiked } = useLikes(tutorial.id, userId, "tutorial");
   const [playing, setPlaying] = useState(false);
   const locked = !userPaid;
 
@@ -300,6 +304,22 @@ function TutorialCard({ tutorial, userPaid }: TutorialCardProps) {
                 {tutorial.description}
               </Text>
             )}
+            <TouchableOpacity
+              onPress={toggleLiked}
+              style={styles.tutorialLikeRow}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons
+                name={isLiked ? "heart" : "heart-outline"}
+                size={14}
+                color={isLiked ? colors.accent : colors.textSecondary}
+              />
+              {likeCount > 0 && (
+                <Text style={[styles.tutorialLikeCount, isLiked && styles.tutorialLikeCountActive]}>
+                  {likeCount}
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
         {playing && !locked && (
@@ -320,9 +340,10 @@ interface TutorialsSectionProps {
   tutorials: TutorialDoc[];
   userPaid: boolean;
   isAdmin: boolean;
+  userId: string;
 }
 
-function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProps) {
+function TutorialsSection({ tutorials, userPaid, isAdmin, userId }: TutorialsSectionProps) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -338,7 +359,7 @@ function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProp
         </Card>
       ) : (
         tutorials.map((t) => (
-          <TutorialCard key={t.id} tutorial={t} userPaid={userPaid} />
+          <TutorialCard key={t.id} tutorial={t} userPaid={userPaid} userId={userId} />
         ))
       )}
 
@@ -355,6 +376,50 @@ function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProp
 }
 
 // ─── Section 5: Gallery ───────────────────────────────────────────────────────
+
+// ─── Gallery cell with like overlay ─────────────────────────────────────────
+
+interface GalleryCellProps {
+  item: MediaDoc;
+  userId: string;
+  onPress: () => void;
+  onLongPress: () => void;
+}
+
+function GalleryCell({ item, userId, onPress, onLongPress }: GalleryCellProps) {
+  const { count: likeCount, isLiked } = useLikes(item.id, userId, "media");
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.85}
+      style={styles.galleryCell}
+    >
+      <Image
+        source={{ uri: item.storageUrl }}
+        style={styles.galleryImage}
+        resizeMode="cover"
+      />
+      {item.type === "video" && (
+        <View style={styles.galleryVideoOverlay}>
+          <Text style={styles.galleryPlayIcon}>▶</Text>
+        </View>
+      )}
+      {/* Like count overlay — bottom-left */}
+      <View style={styles.galleryLikeOverlay}>
+        <Ionicons
+          name={isLiked ? "heart" : "heart-outline"}
+          size={12}
+          color={colors.card}
+        />
+        {likeCount > 0 && (
+          <Text style={styles.galleryLikeCount}>{likeCount}</Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 interface GallerySectionProps {
   media: MediaDoc[];
@@ -392,28 +457,17 @@ function GallerySection({ media, isAdmin, userId }: GallerySectionProps) {
       ) : (
         <View style={styles.galleryGrid}>
           {media.map((m) => (
-            <TouchableOpacity
+            <GalleryCell
               key={m.id}
+              item={m}
+              userId={userId}
               onPress={() => handleMediaPress(m)}
               onLongPress={() => {
                 if (canDelete(m)) {
                   Alert.alert("Delete", "Delete this media? (Phase 2 implementation)");
                 }
               }}
-              activeOpacity={0.85}
-              style={styles.galleryCell}
-            >
-              <Image
-                source={{ uri: m.storageUrl }}
-                style={styles.galleryImage}
-                resizeMode="cover"
-              />
-              {m.type === "video" && (
-                <View style={styles.galleryVideoOverlay}>
-                  <Text style={styles.galleryPlayIcon}>▶</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            />
           ))}
         </View>
       )}
@@ -541,6 +595,7 @@ export default function SessionDetail() {
           tutorials={tutorials}
           userPaid={userPaid}
           isAdmin={isAdmin}
+          userId={userId}
         />
 
         {/* Section 5: Gallery */}
@@ -807,6 +862,20 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.caption,
     color: colors.textSecondary,
   },
+  tutorialLikeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 4,
+  },
+  tutorialLikeCount: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: "600",
+  },
+  tutorialLikeCountActive: {
+    color: colors.accent,
+  },
   uploadButton: {
     marginHorizontal: spacing.pagePadding,
     marginTop: spacing.sm,
@@ -843,6 +912,23 @@ const styles = StyleSheet.create({
   galleryPlayIcon: {
     color: colors.card,
     fontSize: 20,
+  },
+  galleryLikeOverlay: {
+    position: "absolute",
+    bottom: 4,
+    left: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  galleryLikeCount: {
+    color: colors.card,
+    fontSize: 10,
+    fontWeight: "700",
   },
   previewOverlay: {
     flex: 1,
