@@ -1,0 +1,141 @@
+<h2>Capture Flow — Final</h2>
+<p class="subtitle">FAB → camera → tap for photo, hold for video → instant post to gallery.</p>
+
+<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+
+  <!-- Step 1: Session detail with FAB -->
+  <div style="flex: 1; min-width: 280px;">
+    <h3>1. Session Detail + FAB</h3>
+    <div style="max-width: 390px;">
+      <div style="background: #FAF7F2; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(45,27,61,0.12); border: 1px solid #E8E2D9; min-height: 400px; position: relative; padding: 20px;">
+        <!-- Gallery section -->
+        <div style="margin-top: 200px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 15px; font-weight: 700; color: #2D1B3D;">Gallery</div>
+            <div style="font-size: 12px; color: #C9963C; font-weight: 600;">+ Add from roll</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; border-radius: 12px; overflow: hidden;">
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #E8D5B8, #D4BFA0);"></div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #D4A87A, #C49668);"></div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #C9963C, #B8863A); display: flex; align-items: center; justify-content: center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+          </div>
+        </div>
+        <!-- FAB -->
+        <div style="position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 28px; background: #C9963C; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(201,150,60,0.4);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Camera -->
+  <div style="flex: 1; min-width: 280px;">
+    <h3>2. Camera (Photo + Video)</h3>
+    <div style="max-width: 390px;">
+      <div style="background: #0F0F0F; border-radius: 24px; overflow: hidden; min-height: 500px; display: flex; flex-direction: column;">
+        <!-- Preview -->
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative;">
+          <div style="font-size: 14px; color: rgba(255,255,255,0.2);">Camera Preview</div>
+          <!-- Top bar -->
+          <div style="position: absolute; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 28px; color: white; cursor: pointer;">✕</div>
+            <div style="background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 100px; font-size: 12px; color: white;">Apr 21 Session</div>
+            <div style="width: 28px;"></div>
+          </div>
+          <!-- Recording indicator (hidden by default, shows during video) -->
+          <div style="position: absolute; top: 60px; left: 0; right: 0; text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(220,38,38,0.8); padding: 4px 12px; border-radius: 100px;">
+              <div style="width: 8px; height: 8px; border-radius: 4px; background: white;"></div>
+              <span style="font-size: 12px; color: white; font-weight: 600;">0:12</span>
+            </div>
+          </div>
+        </div>
+        <!-- Controls -->
+        <div style="padding: 20px;">
+          <!-- Mode toggle -->
+          <div style="display: flex; justify-content: center; gap: 24px; margin-bottom: 20px;">
+            <div style="font-size: 13px; color: #C9963C; font-weight: 600;">PHOTO</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,0.4);">VIDEO</div>
+          </div>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 32px;">
+            <!-- Camera roll shortcut -->
+            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </div>
+            <!-- Shutter — tap for photo -->
+            <div style="width: 72px; height: 72px; border-radius: 36px; border: 3px solid white; display: flex; align-items: center; justify-content: center;">
+              <div style="width: 60px; height: 60px; border-radius: 30px; background: white;"></div>
+            </div>
+            <!-- Flip camera -->
+            <div style="width: 40px; height: 40px; border-radius: 20px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/><path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><path d="m15 3-3 3 3 3"/><path d="m9 21 3-3-3-3"/></svg>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 12px;">
+            <div style="font-size: 11px; color: rgba(255,255,255,0.3);">Tap for photo · Hold for video</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Uploading -->
+  <div style="flex: 1; min-width: 280px;">
+    <h3>3. Auto-posts to Gallery</h3>
+    <div style="max-width: 390px;">
+      <div style="background: #FAF7F2; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(45,27,61,0.12); border: 1px solid #E8E2D9; min-height: 400px; position: relative; padding: 20px;">
+        <div style="margin-top: 200px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 15px; font-weight: 700; color: #2D1B3D;">Gallery</div>
+            <div style="font-size: 12px; color: #C9963C; font-weight: 600;">+ Add from roll</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; border-radius: 12px; overflow: hidden;">
+            <!-- New photo uploading -->
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #C9963C, #B8863A); display: flex; align-items: center; justify-content: center; position: relative;">
+              <!-- Upload spinner -->
+              <div style="width: 28px; height: 28px; border-radius: 14px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; animation: spin 0.8s linear infinite;"></div>
+              <div style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.5); padding: 1px 5px; border-radius: 3px; font-size: 9px; color: white;">New</div>
+            </div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #E8D5B8, #D4BFA0);"></div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #D4A87A, #C49668);"></div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #C9963C, #B8863A); display: flex; align-items: center; justify-content: center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #2D1B3D, #3D2B4D);"></div>
+            <div style="aspect-ratio: 1; background: linear-gradient(135deg, #E8D5B8, #C9963C);"></div>
+          </div>
+          <!-- Toast -->
+          <div style="margin-top: 12px; background: #2D1B3D; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 14px;">✓</div>
+            <div style="font-size: 13px; color: white; font-weight: 500;">Photo added to gallery</div>
+          </div>
+        </div>
+        <!-- FAB -->
+        <div style="position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 28px; background: #C9963C; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(201,150,60,0.4);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: rgba(201,150,60,0.08); border-radius: 12px; border: 1px solid rgba(201,150,60,0.15);">
+  <h3 style="margin: 0 0 8px; font-size: 14px;">Complete flow:</h3>
+  <ol style="margin: 0; padding-left: 20px; color: #666; font-size: 13px; line-height: 2;">
+    <li><strong>FAB tap</strong> on session detail → full-screen camera opens</li>
+    <li><strong>Photo mode:</strong> tap shutter → captures → compresses → uploads instantly → returns to session</li>
+    <li><strong>Video mode:</strong> toggle to VIDEO, hold shutter to record (or tap to start/stop) → compresses on-device → uploads → returns</li>
+    <li>Upload happens in background — gallery shows spinner on the new tile, plum toast confirms "Photo/Video added"</li>
+    <li><strong>"+ Add from roll"</strong> in gallery header → opens camera roll picker (photos + videos)</li>
+    <li><strong>Compression:</strong> photos resized to 1080px max dimension, videos to 720p. Keeps uploads fast and storage costs low.</li>
+    <li><strong>No duration cap</strong> for now — but videos over 5 min show a warning "Large video, upload may take a moment"</li>
+  </ol>
+</div>
+
+<style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
