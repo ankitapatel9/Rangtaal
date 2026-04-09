@@ -1,0 +1,129 @@
+<h2>Login + OTP Flow</h2>
+<p class="subtitle">First impression. Clean, confident, culturally grounded.</p>
+
+<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+
+  <!-- Login Screen -->
+  <div style="flex: 1; min-width: 340px;">
+    <h3>Login</h3>
+    <div style="max-width: 390px;">
+      <div style="background: #FAF7F2; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(45,27,61,0.12); border: 1px solid #E8E2D9; min-height: 600px; display: flex; flex-direction: column;">
+
+        <!-- Hero area -->
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px 24px;">
+          <!-- Logo placeholder -->
+          <div style="width: 80px; height: 80px; border-radius: 40px; background: #2D1B3D; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <div style="font-size: 28px;">🪘</div>
+          </div>
+          <div style="font-size: 32px; font-weight: 800; color: #2D1B3D; letter-spacing: -0.5px;">Rangtaal</div>
+          <div style="font-size: 15px; color: #9CA3AF; margin-top: 6px;">Step into the circle</div>
+        </div>
+
+        <!-- Phone input area -->
+        <div style="padding: 0 32px 40px;">
+          <div style="font-size: 13px; font-weight: 600; color: #2D1B3D; margin-bottom: 8px;">Phone number</div>
+          <div style="background: white; border-radius: 14px; padding: 4px; display: flex; align-items: center; border: 1.5px solid #E8E2D9;">
+            <div style="padding: 12px 14px; font-size: 16px; color: #2D1B3D; font-weight: 500; border-right: 1px solid #E8E2D9;">+1</div>
+            <div style="flex: 1; padding: 12px 14px; font-size: 16px; color: #9CA3AF;">(555) 555-5555</div>
+          </div>
+
+          <div style="background: #C9963C; border-radius: 14px; padding: 16px; text-align: center; margin-top: 16px; cursor: pointer;">
+            <div style="font-size: 16px; font-weight: 700; color: white;">Continue</div>
+          </div>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <div style="font-size: 12px; color: #9CA3AF; line-height: 1.6;">By continuing, you agree to receive a<br/>verification code via SMS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTP Screen -->
+  <div style="flex: 1; min-width: 340px;">
+    <h3>Verify OTP</h3>
+    <div style="max-width: 390px;">
+      <div style="background: #FAF7F2; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(45,27,61,0.12); border: 1px solid #E8E2D9; min-height: 600px; display: flex; flex-direction: column;">
+
+        <!-- Back button area -->
+        <div style="padding: 20px 24px 0;">
+          <div style="font-size: 16px; color: #C9963C; font-weight: 500; cursor: pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9963C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="m15 18-6-6 6-6"/></svg>
+            Back
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 32px;">
+          <div style="font-size: 26px; font-weight: 800; color: #2D1B3D;">Enter code</div>
+          <div style="font-size: 14px; color: #9CA3AF; margin-top: 8px; text-align: center;">Sent to +1 (555) 555-5555</div>
+
+          <!-- OTP boxes -->
+          <div style="display: flex; gap: 10px; margin-top: 32px;">
+            <div style="width: 48px; height: 56px; border-radius: 12px; border: 2px solid #C9963C; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #2D1B3D; background: white;">1</div>
+            <div style="width: 48px; height: 56px; border-radius: 12px; border: 2px solid #C9963C; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #2D1B3D; background: white;">2</div>
+            <div style="width: 48px; height: 56px; border-radius: 12px; border: 2px solid #C9963C; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #2D1B3D; background: white;">3</div>
+            <div style="width: 48px; height: 56px; border-radius: 12px; border: 2px solid #E8E2D9; display: flex; align-items: center; justify-content: center; background: white;">
+              <div style="width: 2px; height: 24px; background: #C9963C; animation: blink 1s infinite;"></div>
+            </div>
+            <div style="width: 48px; height: 56px; border-radius: 12px; border: 2px solid #E8E2D9; background: white;"></div>
+            <div style="width: 48px; height: 56px; border-radius: 12px; border: 2px solid #E8E2D9; background: white;"></div>
+          </div>
+
+          <div style="margin-top: 32px; text-align: center;">
+            <div style="font-size: 14px; color: #9CA3AF;">Didn't get the code?</div>
+            <div style="font-size: 14px; color: #C9963C; font-weight: 600; margin-top: 4px; cursor: pointer;">Resend</div>
+          </div>
+        </div>
+
+        <!-- Auto-verify note -->
+        <div style="padding: 0 32px 32px; text-align: center;">
+          <div style="font-size: 12px; color: #9CA3AF;">Code auto-verifies when all 6 digits are entered</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome Screen -->
+  <div style="flex: 1; min-width: 340px;">
+    <h3>Welcome (New User)</h3>
+    <div style="max-width: 390px;">
+      <div style="background: #FAF7F2; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(45,27,61,0.12); border: 1px solid #E8E2D9; min-height: 600px; display: flex; flex-direction: column;">
+
+        <!-- Content -->
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 32px;">
+          <div style="font-size: 28px; font-weight: 800; color: #2D1B3D; line-height: 1.2;">Welcome to<br/>Rangtaal 🪘</div>
+          <div style="font-size: 15px; color: #9CA3AF; margin-top: 8px;">Let's get you set up.</div>
+
+          <div style="margin-top: 32px;">
+            <div style="font-size: 13px; font-weight: 600; color: #2D1B3D; margin-bottom: 8px;">Your name</div>
+            <div style="background: white; border-radius: 14px; border: 1.5px solid #E8E2D9; padding: 14px 16px;">
+              <span style="font-size: 16px; color: #2D1B3D;">Nik Patel</span>
+            </div>
+          </div>
+
+          <div style="background: #C9963C; border-radius: 14px; padding: 16px; text-align: center; margin-top: 24px; cursor: pointer;">
+            <div style="font-size: 16px; font-weight: 700; color: white;">Join Rangtaal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: rgba(201,150,60,0.08); border-radius: 12px; border: 1px solid rgba(201,150,60,0.15);">
+  <h3 style="margin: 0 0 8px; font-size: 14px;">Design notes:</h3>
+  <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+    <li><strong>Login</strong> — logo + tagline centered in hero area, phone input at bottom. Single "Continue" CTA. No social login (phone auth only).</li>
+    <li><strong>OTP</strong> — individual digit boxes with gold focus ring. Auto-submits on 6th digit. Resend link below. Back arrow returns to login.</li>
+    <li><strong>Welcome</strong> — only shows for new users (no Firestore user doc yet). Collects name only. "Join Rangtaal" creates the user doc and redirects to home.</li>
+    <li>All three use the Plum & Gold palette. Warm ivory background, white inputs, gold CTAs.</li>
+  </ul>
+</div>
+
+<style>
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+</style>
