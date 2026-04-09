@@ -1,48 +1,57 @@
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Home, Calendar, Video, Users, User } from "lucide-react-native";
 
 export default function AdminLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#3B0764",
-        tabBarInactiveTintColor: "#9CA3AF"
+        tabBarActiveTintColor: "#C9963C",
+        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#E8E2D9",
+          borderTopWidth: 1,
+        },
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: "Community",
-          tabBarIcon: ({ color, size }) => <Ionicons name="people" color={color} size={size} />
-        }}
-      />
-      <Tabs.Screen
-        name="finance"
-        options={{
-          title: "Finance",
-          tabBarIcon: ({ color, size }) => <Ionicons name="wallet" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Home size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
       <Tabs.Screen
         name="sessions"
         options={{
-          title: "Sessions",
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Calendar size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="community"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Users size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <User size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="finance"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

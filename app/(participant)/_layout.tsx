@@ -1,48 +1,59 @@
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Home, Calendar, Video, MessageCircle, User } from "lucide-react-native";
 
 export default function ParticipantLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#3B0764",
-        tabBarInactiveTintColor: "#9CA3AF"
+        tabBarActiveTintColor: "#C9963C",
+        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#E8E2D9",
+          borderTopWidth: 1,
+        },
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Home size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
       <Tabs.Screen
         name="schedule"
         options={{
-          title: "Schedule",
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Calendar size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
       <Tabs.Screen
         name="videos"
         options={{
-          title: "Videos",
-          tabBarIcon: ({ color, size }) => <Ionicons name="play-circle" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Video size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: "Chat",
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <MessageCircle size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
       <Tabs.Screen
         name="me"
         options={{
-          title: "Me",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />
+          tabBarIcon: ({ color, focused }) => (
+            <User size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          ),
         }}
       />
     </Tabs>
