@@ -18,3 +18,5 @@ export type { SegmentedControlProps } from "./SegmentedControl";
 
 export { PaymentBanner } from "./PaymentBanner";
 export type { PaymentBannerProps } from "./PaymentBanner";
+
+export { CaptureButton } from "./CaptureButton";
