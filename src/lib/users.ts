@@ -1,5 +1,5 @@
 import firestore from "@react-native-firebase/firestore";
-import { NewUserInput } from "../types/user";
+import { NewUserInput, UserDoc } from "../types/user";
 
 export async function createUserDoc(input: NewUserInput): Promise<void> {
   const ref = firestore().collection("users").doc(input.uid);
@@ -10,4 +10,10 @@ export async function createUserDoc(input: NewUserInput): Promise<void> {
     role: "participant",
     createdAt: firestore.FieldValue.serverTimestamp()
   });
+}
+
+export async function getUserDoc(uid: string): Promise<UserDoc | null> {
+  const snap = await firestore().collection("users").doc(uid).get();
+  if (!snap.exists) return null;
+  return snap.data() as UserDoc;
 }
