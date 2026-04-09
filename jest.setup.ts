@@ -17,6 +17,10 @@ jest.mock("@react-native-firebase/firestore", () => {
       }))
     }))
   }));
-  firestoreMock.FieldValue = { serverTimestamp: jest.fn(() => "SERVER_TIMESTAMP") };
+  firestoreMock.FieldValue = {
+    serverTimestamp: jest.fn(() => "SERVER_TIMESTAMP"),
+    arrayUnion: jest.fn((val) => ({ __op: "arrayUnion", val })),
+    arrayRemove: jest.fn((val) => ({ __op: "arrayRemove", val })),
+  };
   return { __esModule: true, default: firestoreMock };
 });
