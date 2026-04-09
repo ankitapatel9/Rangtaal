@@ -48,3 +48,4 @@ google-services.json
 # Cloud Functions build output
 functions/lib/
 functions/node_modules/
+.claude/worktrees/
