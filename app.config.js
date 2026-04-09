@@ -54,6 +54,9 @@ module.exports = () => ({
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
+    entitlements: {
+      "aps-environment": "development",
+    },
   },
   android: {
     package: "com.rangtaal.app",
