@@ -1,8 +1,20 @@
-import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, Share, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { signOut } from "../../src/lib/auth";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
 import { colors } from "../../src/theme/colors";
+
+const INVITE_MESSAGE =
+  "Join our Garba community on Rangtaal! 🪘\n\nDownload the app: https://rangtaal.app";
+
+async function handleInvite() {
+  try {
+    await Share.share({ message: INVITE_MESSAGE });
+  } catch {
+    Alert.alert("Error", "Could not open share sheet. Please try again.");
+  }
+}
 
 export default function ParticipantMe() {
   const { user: authUser } = useAuth();
@@ -25,6 +37,15 @@ export default function ParticipantMe() {
         <Text style={[styles.badgeText, userDoc?.paid ? styles.paidText : styles.unpaidText]}>
           {userDoc?.paid ? "Paid ✓" : "Unpaid"}
         </Text>
+      </View>
+
+      {/* Settings menu */}
+      <View style={styles.menuCard}>
+        <TouchableOpacity style={styles.menuRow} onPress={handleInvite}>
+          <Ionicons name="share-social-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+          <Text style={styles.menuText}>Invite Friends</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.btn} onPress={() => signOut()}>
@@ -52,6 +73,28 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 14, fontWeight: "700" },
   paidText: { color: colors.accent },
   unpaidText: { color: colors.textBody },
+  menuCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    width: "100%",
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuText: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.primary,
+    fontWeight: "500",
+  },
   btn: { backgroundColor: colors.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 32 },
   btnText: { color: colors.primary, fontWeight: "700" }
 });

@@ -5,12 +5,24 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert
+  Alert,
+  Share,
 } from "react-native";
 import { useAllUsers } from "../../src/hooks/useAllUsers";
 import { toggleUserPaid } from "../../src/lib/users";
 import { UserDoc } from "../../src/types/user";
 import { colors } from "../../src/theme/colors";
+
+const INVITE_MESSAGE =
+  "Join our Garba community on Rangtaal! 🪘\n\nDownload the app: https://rangtaal.app";
+
+async function handleInvite() {
+  try {
+    await Share.share({ message: INVITE_MESSAGE });
+  } catch {
+    Alert.alert("Error", "Could not open share sheet. Please try again.");
+  }
+}
 
 function UserRow({ item }: { item: UserDoc }) {
   const handlePress = () => {
@@ -60,7 +72,12 @@ export default function AdminCommunity() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Community</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.title}>Community</Text>
+        <TouchableOpacity style={styles.inviteBtn} onPress={handleInvite}>
+          <Text style={styles.inviteBtnText}>+ Invite</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={users}
         keyExtractor={(item) => item.uid}
@@ -75,7 +92,26 @@ export default function AdminCommunity() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.pageBackground, paddingTop: 16 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.pageBackground },
-  title: { fontSize: 28, fontWeight: "700", color: colors.primary, paddingHorizontal: 16, marginBottom: 12 },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  title: { fontSize: 28, fontWeight: "700", color: colors.primary },
+  inviteBtn: {
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  inviteBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.accent,
+  },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   empty: { color: colors.primary, textAlign: "center", marginTop: 32 },
   card: {
