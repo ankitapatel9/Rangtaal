@@ -42,6 +42,9 @@ module.exports = () => ({
     bundleIdentifier: "com.rangtaal.app",
     googleServicesFile:
       process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: "com.rangtaal.app",
