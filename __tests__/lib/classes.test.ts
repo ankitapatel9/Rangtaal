@@ -1,5 +1,5 @@
 import firestore from "@react-native-firebase/firestore";
-import { getActiveClass } from "../../src/lib/classes";
+import { getActiveClass, createClassAndSeason } from "../../src/lib/classes";
 
 describe("getActiveClass", () => {
   it("returns the active class doc when present", async () => {
@@ -43,5 +43,73 @@ describe("getActiveClass", () => {
 
     const result = await getActiveClass();
     expect(result).toBeNull();
+  });
+});
+
+describe("createClassAndSeason", () => {
+  it("creates a class and one session per Tuesday between seasonStart and seasonEnd", async () => {
+    const classAddMock = jest.fn().mockResolvedValue({ id: "classA" });
+    const batchSetMock = jest.fn();
+    const batchCommitMock = jest.fn().mockResolvedValue(undefined);
+    const batchMock = { set: batchSetMock, commit: batchCommitMock };
+
+    let sessionRefCount = 0;
+    const sessionDocRef = () => {
+      sessionRefCount += 1;
+      return { id: `session${sessionRefCount}` };
+    };
+
+    (firestore as unknown as jest.Mock).mockReturnValue({
+      collection: jest.fn((name: string) => {
+        if (name === "classes") {
+          return { add: classAddMock };
+        }
+        if (name === "sessions") {
+          return { doc: jest.fn(() => sessionDocRef()) };
+        }
+        throw new Error(`unexpected collection ${name}`);
+      }),
+      batch: jest.fn(() => batchMock),
+    });
+
+    const result = await createClassAndSeason({
+      name: "Garba Workshops 2026",
+      location: "Roselle Park District",
+      address: "555 W Bryn Mawr Ave, Roselle, IL",
+      startTime: "19:30",
+      endTime: "21:30",
+      monthlyFee: 60,
+      seasonStart: "2026-04-21T19:30:00-05:00",
+      seasonEnd: "2026-04-28T19:30:00-05:00",
+      adminUserId: "admin1",
+    });
+
+    expect(classAddMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Garba Workshops 2026",
+        monthlyFee: 60,
+        active: true,
+        dayOfWeek: "Tuesday",
+        createdBy: "admin1",
+        createdAt: "SERVER_TIMESTAMP",
+      })
+    );
+    expect(batchSetMock).toHaveBeenCalledTimes(2);
+    expect(batchSetMock.mock.calls[0][1]).toEqual(
+      expect.objectContaining({
+        classId: "classA",
+        date: "2026-04-21T19:30:00-05:00",
+        status: "upcoming",
+        rsvps: [],
+        customMessage: null,
+        cancellationReason: null,
+        cancelledAt: null,
+        cancelledBy: null,
+        reminderSent: { dayBefore: false, dayOf: false },
+      })
+    );
+    expect(batchSetMock.mock.calls[1][1].date).toBe("2026-04-28T19:30:00-05:00");
+    expect(batchCommitMock).toHaveBeenCalled();
+    expect(result).toBe("classA");
   });
 });
