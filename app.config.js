@@ -15,7 +15,19 @@ module.exports = () => ({
   name: "Rangtaal",
   slug: "Rangtaal",
   version: "1.0.0",
-  scheme: "rangtaal",
+  // scheme is an ARRAY so Expo's config plugin generates
+  // CFBundleURLTypes with both entries and we never have to override
+  // ios.infoPlist.CFBundleURLTypes directly (which would conflict
+  // with the abstract property and trigger a warning that crashes
+  // prebuild due to a chalk version mismatch in @expo/config-plugins).
+  //
+  // - "rangtaal"                       → deep link scheme used by Expo Router
+  // - "com.googleusercontent.apps..."  → REVERSED_CLIENT_ID required by
+  //                                      Firebase iOS phone auth SDK
+  scheme: [
+    "rangtaal",
+    "com.googleusercontent.apps.560643723293-c2r4ktqn44fdf3kmm3m2ung5dfronnj2",
+  ],
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
@@ -30,21 +42,6 @@ module.exports = () => ({
     bundleIdentifier: "com.rangtaal.app",
     googleServicesFile:
       process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
-    // Firebase iOS phone auth SDK asserts that a URL scheme matching
-    // GoogleService-Info.plist's REVERSED_CLIENT_ID is registered, even
-    // for apps that never call Google Sign-In. Without it,
-    // PhoneAuthProvider.verifyPhoneNumber triggers a fatal EXC_BREAKPOINT
-    // before it even checks whether the number is a test number.
-    // See: expo/expo#39233-adjacent issues; Firebase iOS SDK internals.
-    infoPlist: {
-      CFBundleURLTypes: [
-        {
-          CFBundleURLSchemes: [
-            "com.googleusercontent.apps.560643723293-c2r4ktqn44fdf3kmm3m2ung5dfronnj2",
-          ],
-        },
-      ],
-    },
   },
   android: {
     package: "com.rangtaal.app",
