@@ -3,10 +3,12 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../src/hooks/useAuth";
 import { useUser } from "../src/hooks/useUser";
+import { useNotifications } from "../src/hooks/useNotifications";
 
 export default function RootLayout() {
   const { user: authUser, loading: authLoading } = useAuth();
   const { user: userDoc, loading: userLoading } = useUser(authUser?.uid);
+  useNotifications(authUser?.uid);
   const segments = useSegments();
   const router = useRouter();
 

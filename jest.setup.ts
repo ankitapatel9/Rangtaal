@@ -1,3 +1,13 @@
+jest.mock("@react-native-firebase/messaging", () => {
+  const messagingMock: any = jest.fn(() => ({
+    requestPermission: jest.fn().mockResolvedValue(1),
+    getToken: jest.fn().mockResolvedValue("mock-fcm-token"),
+    onTokenRefresh: jest.fn(() => jest.fn()),
+  }));
+  messagingMock.AuthorizationStatus = { AUTHORIZED: 1, PROVISIONAL: 2 };
+  return { __esModule: true, default: messagingMock };
+});
+
 jest.mock("@react-native-firebase/auth", () => ({
   __esModule: true,
   default: jest.fn(() => ({
