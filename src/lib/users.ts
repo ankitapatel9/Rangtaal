@@ -18,3 +18,12 @@ export async function getUserDoc(uid: string): Promise<UserDoc | null> {
   if (!snap.exists()) return null;
   return snap.data() as UserDoc;
 }
+
+export async function toggleUserPaid(uid: string, paid: boolean): Promise<void> {
+  await firestore().collection("users").doc(uid).update({ paid });
+}
+
+export async function getAllUsers(): Promise<UserDoc[]> {
+  const snap = await firestore().collection("users").orderBy("name", "asc").get();
+  return snap.docs.map((doc) => ({ ...(doc.data() as UserDoc), uid: doc.id }));
+}
