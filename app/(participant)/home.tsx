@@ -20,6 +20,7 @@ import {
   GoldButton,
   PaymentBanner,
 } from "../../src/components";
+import { NotificationBellIcon } from "../../src/components/NotificationBellIcon";
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
 import { spacing } from "../../src/theme/spacing";
@@ -174,7 +175,10 @@ export default function ParticipantHome() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.wordmark}>Rangtaal</Text>
-        <Avatar name={userName} size={36} />
+        <View style={styles.headerRight}>
+          <NotificationBellIcon />
+          <Avatar name={userName} size={36} />
+        </View>
       </View>
 
       <ScrollView
@@ -256,6 +260,11 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.extraBold,
     color: colors.primary,
     letterSpacing: -0.5,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   scroll: {
     flex: 1,
