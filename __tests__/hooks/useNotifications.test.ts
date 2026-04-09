@@ -19,6 +19,7 @@ describe("useNotifications", () => {
 
     (messaging as unknown as jest.Mock).mockReturnValue({
       requestPermission: mockRequestPermission,
+      registerDeviceForRemoteMessages: jest.fn().mockResolvedValue(undefined),
       getToken: mockGetToken,
       onTokenRefresh: mockOnTokenRefresh,
     });
