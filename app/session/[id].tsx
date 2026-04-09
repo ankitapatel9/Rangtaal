@@ -12,6 +12,7 @@ import {
   Alert,
   Dimensions,
 } from "react-native";
+import { Video, ResizeMode } from "expo-av";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
@@ -264,6 +265,57 @@ function AdminCancelSection({ sessionId, adminUid, cancelled }: AdminCancelSecti
 
 // ─── Section 4: Tutorials ─────────────────────────────────────────────────────
 
+interface TutorialCardProps {
+  tutorial: TutorialDoc;
+  userPaid: boolean;
+}
+
+function TutorialCard({ tutorial, userPaid }: TutorialCardProps) {
+  const [playing, setPlaying] = useState(false);
+  const locked = !userPaid;
+
+  function handlePress() {
+    if (locked) {
+      Alert.alert("Unlock Required", "Contact admin to get access to tutorials.");
+      return;
+    }
+    setPlaying((prev) => !prev);
+  }
+
+  return (
+    <TouchableOpacity key={tutorial.id} onPress={handlePress} activeOpacity={0.8}>
+      <Card style={styles.tutorialCard}>
+        {/* Gold accent line at top */}
+        <View style={styles.tutorialAccentLine} />
+        <View style={styles.tutorialRow}>
+          {/* Icon */}
+          <View style={[styles.tutorialIconCircle, locked && styles.tutorialIconCircleLocked]}>
+            <Text style={styles.tutorialIcon}>{locked ? "🔒" : (playing ? "■" : "▶")}</Text>
+          </View>
+          {/* Info */}
+          <View style={styles.tutorialInfo}>
+            <Text style={styles.tutorialTitle}>{tutorial.title}</Text>
+            {tutorial.description != null && (
+              <Text style={styles.tutorialDesc} numberOfLines={playing ? undefined : 2}>
+                {tutorial.description}
+              </Text>
+            )}
+          </View>
+        </View>
+        {playing && !locked && (
+          <Video
+            source={{ uri: tutorial.videoUrl }}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay
+            style={styles.inlineVideo}
+          />
+        )}
+      </Card>
+    </TouchableOpacity>
+  );
+}
+
 interface TutorialsSectionProps {
   tutorials: TutorialDoc[];
   userPaid: boolean;
@@ -271,15 +323,6 @@ interface TutorialsSectionProps {
 }
 
 function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProps) {
-  function handleTutorialPress(t: TutorialDoc) {
-    if (!userPaid) {
-      Alert.alert("Unlock Required", "Contact admin to get access to tutorials.");
-      return;
-    }
-    // Phase 2: play inline via expo-av
-    Alert.alert("Tutorial", `Playing: ${t.title}`);
-  }
-
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -294,30 +337,9 @@ function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProp
           <Text style={styles.emptyText}>No tutorials yet.</Text>
         </Card>
       ) : (
-        tutorials.map((t) => {
-          const locked = !userPaid;
-          return (
-            <TouchableOpacity key={t.id} onPress={() => handleTutorialPress(t)} activeOpacity={0.8}>
-              <Card style={styles.tutorialCard}>
-                {/* Gold accent line at top */}
-                <View style={styles.tutorialAccentLine} />
-                <View style={styles.tutorialRow}>
-                  {/* Icon */}
-                  <View style={[styles.tutorialIconCircle, locked && styles.tutorialIconCircleLocked]}>
-                    <Text style={styles.tutorialIcon}>{locked ? "🔒" : "▶"}</Text>
-                  </View>
-                  {/* Info */}
-                  <View style={styles.tutorialInfo}>
-                    <Text style={styles.tutorialTitle}>{t.title}</Text>
-                    {t.description != null && (
-                      <Text style={styles.tutorialDesc} numberOfLines={2}>{t.description}</Text>
-                    )}
-                  </View>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          );
-        })
+        tutorials.map((t) => (
+          <TutorialCard key={t.id} tutorial={t} userPaid={userPaid} />
+        ))
       )}
 
       {isAdmin && (
@@ -788,6 +810,10 @@ const styles = StyleSheet.create({
   uploadButton: {
     marginHorizontal: spacing.pagePadding,
     marginTop: spacing.sm,
+  },
+  inlineVideo: {
+    width: "100%",
+    height: 220,
   },
 
   // Gallery
