@@ -12,3 +12,12 @@ export async function getSessionsForClass(classId: string): Promise<SessionDoc[]
     id: doc.id,
   }));
 }
+
+export async function rsvpToSession(sessionId: string, userId: string): Promise<void> {
+  await firestore()
+    .collection("sessions")
+    .doc(sessionId)
+    .update({
+      rsvps: firestore.FieldValue.arrayUnion(userId),
+    });
+}

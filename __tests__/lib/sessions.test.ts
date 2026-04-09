@@ -1,5 +1,5 @@
 import firestore from "@react-native-firebase/firestore";
-import { getSessionsForClass } from "../../src/lib/sessions";
+import { getSessionsForClass, rsvpToSession } from "../../src/lib/sessions";
 
 describe("getSessionsForClass", () => {
   it("queries sessions by classId ordered by date asc", async () => {
@@ -21,5 +21,22 @@ describe("getSessionsForClass", () => {
     expect(result[0].id).toBe("s1");
     expect(result[0].date).toBe("2026-04-21T19:30:00-05:00");
     expect(result[1].rsvps).toEqual(["u1"]);
+  });
+});
+
+describe("rsvpToSession", () => {
+  it("calls update with arrayUnion(userId) on the session doc", async () => {
+    const updateMock = jest.fn().mockResolvedValue(undefined);
+    (firestore as unknown as jest.Mock).mockReturnValue({
+      collection: jest.fn(() => ({
+        doc: jest.fn(() => ({ update: updateMock })),
+      })),
+    });
+
+    await rsvpToSession("session1", "user1");
+
+    expect(updateMock).toHaveBeenCalledWith({
+      rsvps: { __op: "arrayUnion", val: "user1" },
+    });
   });
 });
