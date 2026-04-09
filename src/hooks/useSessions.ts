@@ -22,13 +22,20 @@ export function useSessions(classId: string | undefined): UseSessionsState {
       .collection("sessions")
       .where("classId", "==", classId)
       .orderBy("date", "asc")
-      .onSnapshot((snap) => {
-        const sessions = snap.docs.map((d) => ({
-          ...(d.data() as Omit<SessionDoc, "id">),
-          id: d.id,
-        }));
-        setState({ sessions, loading: false });
-      });
+      .onSnapshot(
+        (snap) => {
+          if (!snap) return;
+          const sessions = snap.docs.map((d) => ({
+            ...(d.data() as Omit<SessionDoc, "id">),
+            id: d.id,
+          }));
+          setState({ sessions, loading: false });
+        },
+        (err) => {
+          console.error("useSessions error:", err);
+          setState({ sessions: [], loading: false });
+        }
+      );
     return unsub;
   }, [classId]);
 
