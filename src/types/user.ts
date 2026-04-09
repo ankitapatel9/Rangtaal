@@ -6,6 +6,7 @@ export interface UserDoc {
   phoneNumber: string;
   role: UserRole;
   createdAt: number;
+  paid: boolean;
 }
 
 export interface NewUserInput {

@@ -8,6 +8,7 @@ export async function createUserDoc(input: NewUserInput): Promise<void> {
     name: input.name,
     phoneNumber: input.phoneNumber,
     role: "participant",
+    paid: false,
     createdAt: firestore.FieldValue.serverTimestamp()
   });
 }

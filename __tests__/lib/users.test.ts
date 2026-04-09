@@ -21,6 +21,7 @@ describe("createUserDoc", () => {
       name: "Aryan",
       phoneNumber: "+15555555555",
       role: "participant",
+      paid: false,
       createdAt: "SERVER_TIMESTAMP"
     });
   });
