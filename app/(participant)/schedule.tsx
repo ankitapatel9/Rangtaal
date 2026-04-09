@@ -1,95 +1,610 @@
+import React, { useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
+import {
+  SegmentedControl,
+  SectionHeader,
+  Card,
+  AvatarStack,
+} from "../../src/components";
+import { colors } from "../../src/theme/colors";
+import { typography } from "../../src/theme/typography";
+import { spacing } from "../../src/theme/spacing";
 import { SessionDoc } from "../../src/types/session";
 
-export default function ParticipantSchedule() {
-  const router = useRouter();
-  const { class_, loading: classLoading } = useActiveClass();
-  const { sessions, loading: sessionsLoading } = useSessions(class_?.id);
+// ─── helpers ────────────────────────────────────────────────────────────────
 
-  const loading = classLoading || sessionsLoading;
+const DAYS = ["S", "M", "T", "W", "T", "F", "S"] as const;
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+] as const;
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (!class_) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.title}>No active class</Text>
-        <Text style={styles.sub}>An admin needs to set up the season first.</Text>
-      </View>
-    );
-  }
-
+function sameDay(a: Date, b: Date) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>{class_.name}</Text>
-      <Text style={styles.subheader}>
-        {class_.location} · {class_.startTime}–{class_.endTime}
-      </Text>
-      <FlatList
-        data={sessions}
-        keyExtractor={(s) => s.id}
-        contentContainerStyle={{ paddingVertical: 12 }}
-        renderItem={({ item }) => (
-          <SessionRow session={item} onPress={() => router.push(("/session/" + item.id) as any)} />
-        )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No sessions scheduled yet.</Text>
-        }
-      />
-    </View>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
 }
 
-function SessionRow({ session, onPress }: { session: SessionDoc; onPress: () => void }) {
-  const d = new Date(session.date);
-  const dateLabel = d.toLocaleDateString(undefined, {
+function startOfMonth(year: number, month: number): Date {
+  return new Date(year, month, 1);
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function formatShortDate(ms: number): string {
+  return new Date(ms).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatLongDate(ms: number): string {
+  return new Date(ms).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
-  const cancelled = session.status === "cancelled";
+}
+
+function isThisWeek(ms: number): boolean {
+  const now = new Date();
+  const date = new Date(ms);
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+  return date >= startOfWeek && date <= endOfWeek;
+}
+
+// ─── Calendar view ───────────────────────────────────────────────────────────
+
+interface CalendarViewProps {
+  sessions: SessionDoc[];
+  onSelectSession: (session: SessionDoc) => void;
+}
+
+function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  const firstDay = startOfMonth(year, month);
+  const totalDays = daysInMonth(year, month);
+  const startDow = firstDay.getDay(); // 0 = Sunday
+
+  // Map sessions to dates in this month
+  const sessionDateSet = useMemo(() => {
+    const map = new Map<string, SessionDoc>();
+    for (const s of sessions) {
+      const d = new Date(s.date);
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        map.set(d.getDate().toString(), s);
+      }
+    }
+    return map;
+  }, [sessions, year, month]);
+
+  const selectedSession = useMemo(() => {
+    if (!selectedSessionId) return null;
+    return sessions.find((s) => s.id === selectedSessionId) ?? null;
+  }, [selectedSessionId, sessions]);
+
+  function prevMonth() {
+    if (month === 0) { setMonth(11); setYear(y => y - 1); }
+    else setMonth(m => m - 1);
+  }
+
+  function nextMonth() {
+    if (month === 11) { setMonth(0); setYear(y => y + 1); }
+    else setMonth(m => m + 1);
+  }
+
+  // Build grid cells (null = empty, number = day)
+  const cells: (number | null)[] = [
+    ...Array<null>(startDow).fill(null),
+    ...Array.from({ length: totalDays }, (_, i) => i + 1),
+  ];
+  // Pad to complete rows
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  function handleDayPress(day: number) {
+    const s = sessionDateSet.get(day.toString());
+    if (s) {
+      setSelectedSessionId(prev => (prev === s.id ? null : s.id));
+    }
+  }
+
+  const todayDate = today.getDate();
+  const isCurrentMonth =
+    today.getFullYear() === year && today.getMonth() === month;
+
   return (
-    <TouchableOpacity style={[styles.row, cancelled && styles.rowCancelled]} onPress={onPress}>
-      <View>
-        <Text style={[styles.rowDate, cancelled && styles.textStrike]}>{dateLabel}</Text>
-        <Text style={styles.rowMeta}>
-          {cancelled ? "Cancelled" : `${session.rsvps.length} RSVP${session.rsvps.length === 1 ? "" : "s"}`}
+    <View>
+      {/* Month nav */}
+      <View style={styles.monthNav}>
+        <TouchableOpacity onPress={prevMonth} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Text style={styles.monthArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.monthTitle}>
+          {MONTHS[month]} {year}
         </Text>
+        <TouchableOpacity onPress={nextMonth} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Text style={styles.monthArrow}>›</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.chevron}>›</Text>
-    </TouchableOpacity>
+
+      {/* Day headers */}
+      <View style={styles.calRow}>
+        {DAYS.map((d, i) => (
+          <View key={i} style={styles.calCell}>
+            <Text style={styles.dayLabel}>{d}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Calendar grid */}
+      {Array.from({ length: cells.length / 7 }, (_, row) => (
+        <View key={row} style={styles.calRow}>
+          {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
+            if (day == null) {
+              return <View key={col} style={styles.calCell} />;
+            }
+            const session = sessionDateSet.get(day.toString());
+            const isSession = session != null;
+            const isSelected = session != null && session.id === selectedSessionId;
+            const isToday = isCurrentMonth && day === todayDate;
+
+            return (
+              <TouchableOpacity
+                key={col}
+                style={styles.calCell}
+                onPress={() => handleDayPress(day)}
+                disabled={!isSession}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.dayCircle,
+                    isSession && styles.dayCircleSession,
+                    isSelected && styles.dayCircleSelected,
+                    isToday && !isSession && styles.dayCircleToday,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      isSession && styles.dayNumberSession,
+                      isSelected && styles.dayNumberSelected,
+                      !isSession && styles.dayNumberMuted,
+                    ]}
+                  >
+                    {day}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ))}
+
+      {/* Legend */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
+          <Text style={styles.legendLabel}>Selected</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+          <Text style={styles.legendLabel}>Session</Text>
+        </View>
+      </View>
+
+      {/* Selected session preview card */}
+      {selectedSession != null && (
+        <TouchableOpacity
+          onPress={() => onSelectSession(selectedSession)}
+          activeOpacity={0.85}
+        >
+          <Card goldBorder style={styles.previewCard}>
+            <View style={styles.previewRow}>
+              <View style={styles.previewInfo}>
+                <Text style={styles.previewDate}>
+                  {formatLongDate(selectedSession.date)}
+                </Text>
+                <Text style={styles.previewTime}>{selectedSession.time}</Text>
+                <Text style={styles.previewLocation}>{selectedSession.location}</Text>
+                <View style={styles.previewMeta}>
+                  <AvatarStack
+                    names={selectedSession.rsvpUids.map((_, i) => `User ${i + 1}`)}
+                    size={24}
+                    maxVisible={4}
+                  />
+                  <Text style={styles.previewCount}>
+                    {selectedSession.rsvpUids.length} going
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.previewChevron}>›</Text>
+            </View>
+          </Card>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
+// ─── List view ───────────────────────────────────────────────────────────────
+
+interface ListViewProps {
+  sessions: SessionDoc[];
+  onSelectSession: (session: SessionDoc) => void;
+}
+
+function ListView({ sessions, onSelectSession }: ListViewProps) {
+  const now = Date.now();
+  const upcoming = sessions
+    .filter((s) => !s.cancelled && s.date >= now)
+    .sort((a, b) => a.date - b.date);
+  const past = sessions
+    .filter((s) => !s.cancelled && s.date < now)
+    .sort((a, b) => b.date - a.date); // most recent first
+  const cancelled = sessions.filter((s) => s.cancelled);
+
+  function SessionRow({ session }: { session: SessionDoc }) {
+    const thisWeek = isThisWeek(session.date);
+    const isCancelled = session.cancelled;
+
+    return (
+      <TouchableOpacity
+        onPress={() => onSelectSession(session)}
+        activeOpacity={0.8}
+      >
+        <Card
+          goldBorder={thisWeek && !isCancelled}
+          style={[styles.listCard, isCancelled && styles.listCardCancelled]}
+        >
+          <View style={styles.listRow}>
+            <View style={styles.listInfo}>
+              <Text
+                style={[
+                  styles.listDate,
+                  isCancelled && styles.listDateCancelled,
+                ]}
+              >
+                {formatShortDate(session.date)}
+              </Text>
+              <Text style={styles.listMeta}>
+                {session.rsvpUids.length} going
+                {(session.tutorialCount ?? 0) > 0
+                  ? ` · ${session.tutorialCount} tutorials`
+                  : ""}
+              </Text>
+              {isCancelled && (
+                <Text style={styles.cancelledLabel}>Cancelled</Text>
+              )}
+            </View>
+            <Text style={styles.listChevron}>›</Text>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <Card style={styles.emptyCard}>
+        <Text style={styles.emptyText}>No sessions yet. Check back soon.</Text>
+      </Card>
+    );
+  }
+
+  return (
+    <View>
+      {upcoming.length > 0 && (
+        <>
+          <SectionHeader
+            title="UPCOMING"
+            rightLabelVariant="gold"
+            style={styles.listSectionHeader}
+          />
+          {upcoming.map((s) => <SessionRow key={s.id} session={s} />)}
+        </>
+      )}
+
+      {past.length > 0 && (
+        <>
+          <SectionHeader
+            title="PAST"
+            rightLabelVariant="gray"
+            style={styles.listSectionHeader}
+          />
+          {past.map((s) => (
+            <View key={s.id} style={styles.pastRow}>
+              <SessionRow session={s} />
+            </View>
+          ))}
+        </>
+      )}
+
+      {cancelled.length > 0 && (
+        <>
+          <SectionHeader
+            title="CANCELLED"
+            rightLabelVariant="gray"
+            style={styles.listSectionHeader}
+          />
+          {cancelled.map((s) => <SessionRow key={s.id} session={s} />)}
+        </>
+      )}
+    </View>
+  );
+}
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
+
+export default function ParticipantSchedule() {
+  const router = useRouter();
+  const { class_ } = useActiveClass();
+  const { sessions } = useSessions(class_?.id);
+  const [viewIndex, setViewIndex] = useState<0 | 1>(0); // 0 = Calendar, 1 = List
+
+  function navigateToSession(session: SessionDoc) {
+    router.push(`/session/${session.id}` as Parameters<typeof router.push>[0]);
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Schedule</Text>
+        <SegmentedControl
+          options={["Calendar", "List"]}
+          selectedIndex={viewIndex}
+          onChange={setViewIndex}
+          style={styles.toggle}
+        />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {viewIndex === 0 ? (
+          <CalendarView sessions={sessions} onSelectSession={navigateToSession} />
+        ) : (
+          <ListView sessions={sessions} onSelectSession={navigateToSession} />
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FEE7F1", padding: 16 },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FEE7F1", padding: 24 },
-  title: { fontSize: 22, fontWeight: "700", color: "#3B0764" },
-  sub: { fontSize: 14, color: "#3B0764", marginTop: 8, textAlign: "center" },
-  header: { fontSize: 24, fontWeight: "700", color: "#3B0764" },
-  subheader: { fontSize: 14, color: "#3B0764", marginTop: 4, marginBottom: 8 },
-  row: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 6,
+  safe: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
+  },
+  header: {
+    paddingHorizontal: spacing.pagePadding,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.pageBackground,
+  },
+  headerTitle: {
+    fontSize: typography.fontSize.heroTitle,
+    fontWeight: typography.fontWeight.extraBold,
+    color: colors.primary,
+    marginBottom: spacing.sm,
+  },
+  toggle: {
+    // SegmentedControl fills width
+  },
+  scroll: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePadding,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.xxxl,
+  },
+
+  // Calendar
+  monthNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: spacing.base,
   },
-  rowCancelled: { opacity: 0.5 },
-  rowDate: { fontSize: 16, fontWeight: "600", color: "#3B0764" },
-  rowMeta: { fontSize: 12, color: "#3B0764", marginTop: 4 },
-  textStrike: { textDecorationLine: "line-through" },
-  chevron: { fontSize: 22, color: "#9CA3AF" },
-  empty: { textAlign: "center", color: "#3B0764", marginTop: 24 },
+  monthArrow: {
+    fontSize: 24,
+    color: colors.primary,
+    fontWeight: typography.fontWeight.bold,
+    paddingHorizontal: spacing.sm,
+  },
+  monthTitle: {
+    fontSize: typography.fontSize.sectionTitle,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary,
+  },
+  calRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  calCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  dayLabel: {
+    fontSize: typography.fontSize.caption,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.textSecondary,
+  },
+  dayCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayCircleSession: {
+    backgroundColor: colors.primary,
+  },
+  dayCircleSelected: {
+    backgroundColor: colors.accent,
+  },
+  dayCircleToday: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  dayNumber: {
+    fontSize: typography.fontSize.body,
+    color: colors.primary,
+    fontWeight: typography.fontWeight.medium,
+  },
+  dayNumberSession: {
+    color: colors.card,
+    fontWeight: typography.fontWeight.bold,
+  },
+  dayNumberSelected: {
+    color: colors.card,
+    fontWeight: typography.fontWeight.bold,
+  },
+  dayNumberMuted: {
+    color: colors.textSecondary,
+  },
+  legend: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: spacing.lg,
+    marginTop: spacing.sm,
+    marginBottom: spacing.base,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendLabel: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+  },
+  previewCard: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.base,
+  },
+  previewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  previewInfo: { flex: 1 },
+  previewDate: {
+    fontSize: typography.fontSize.cardTitle,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
+    marginBottom: 2,
+  },
+  previewTime: {
+    fontSize: typography.fontSize.body,
+    color: colors.textBody,
+    marginBottom: 2,
+  },
+  previewLocation: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  previewMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  previewCount: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+    marginLeft: spacing.xs,
+  },
+  previewChevron: {
+    fontSize: 22,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
+  },
+
+  // List view
+  listSectionHeader: {
+    marginTop: spacing.base,
+    marginBottom: spacing.xs,
+  },
+  listCard: {
+    marginBottom: spacing.cardGap,
+  },
+  listCardCancelled: {
+    opacity: 0.55,
+  },
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  listInfo: { flex: 1 },
+  listDate: {
+    fontSize: typography.fontSize.cardTitle,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
+    marginBottom: 2,
+  },
+  listDateCancelled: {
+    textDecorationLine: "line-through",
+    color: colors.textSecondary,
+  },
+  listMeta: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+  },
+  cancelledLabel: {
+    fontSize: typography.fontSize.caption,
+    color: colors.destructive,
+    fontWeight: typography.fontWeight.semiBold,
+    marginTop: 2,
+  },
+  listChevron: {
+    fontSize: 22,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
+  },
+  pastRow: {
+    opacity: 0.7,
+  },
+  emptyCard: {
+    alignItems: "center",
+    paddingVertical: spacing.xl,
+  },
+  emptyText: {
+    fontSize: typography.fontSize.body,
+    color: colors.textBody,
+    textAlign: "center",
+  },
 });

@@ -49,3 +49,4 @@ google-services.json
 functions/lib/
 functions/node_modules/
 .claude/worktrees/
+.superpowers/

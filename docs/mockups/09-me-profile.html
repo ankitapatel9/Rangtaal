@@ -1,0 +1,75 @@
+<h2>Me / Profile Screen</h2>
+<p class="subtitle">What participants and admins see about themselves.</p>
+
+<div style="max-width: 390px; margin: 0 auto;">
+  <div style="background: #FAF7F2; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(45,27,61,0.12); border: 1px solid #E8E2D9;">
+
+    <div style="padding: 24px 20px;">
+      <!-- Profile header -->
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+        <div style="width: 64px; height: 64px; border-radius: 32px; background: #2D1B3D; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: white;">NP</div>
+        <div>
+          <div style="font-size: 22px; font-weight: 800; color: #2D1B3D;">Nik Patel</div>
+          <div style="font-size: 14px; color: #9CA3AF;">+1 (555) 555-5555</div>
+        </div>
+      </div>
+
+      <!-- Season stats card -->
+      <div style="background: white; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(45,27,61,0.06);">
+        <div style="font-size: 11px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">THIS SEASON</div>
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: #2D1B3D;">3</div>
+            <div style="font-size: 11px; color: #9CA3AF;">Attended</div>
+          </div>
+          <div style="width: 1px; background: #E8E2D9;"></div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: #2D1B3D;">5</div>
+            <div style="font-size: 11px; color: #9CA3AF;">RSVP'd</div>
+          </div>
+          <div style="width: 1px; background: #E8E2D9;"></div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: #2D1B3D;">2</div>
+            <div style="font-size: 11px; color: #9CA3AF;">Uploaded</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment status -->
+      <div style="background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(45,27,61,0.06); display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #C9963C;">
+        <div>
+          <div style="font-size: 15px; font-weight: 600; color: #2D1B3D;">Payment</div>
+          <div style="font-size: 13px; color: #9CA3AF;">April 2026</div>
+        </div>
+        <div style="font-size: 14px; font-weight: 700; color: #C9963C;">Paid ✓</div>
+      </div>
+
+      <!-- Menu items -->
+      <div style="background: white; border-radius: 14px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(45,27,61,0.06);">
+        <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F5F0EA;">
+          <div style="font-size: 15px; color: #2D1B3D;">Notifications</div>
+          <div style="font-size: 16px; color: #E8E2D9;">›</div>
+        </div>
+        <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F5F0EA;">
+          <div style="font-size: 15px; color: #2D1B3D;">My Uploads</div>
+          <div style="font-size: 16px; color: #E8E2D9;">›</div>
+        </div>
+        <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 15px; color: #2D1B3D;">Help & Support</div>
+          <div style="font-size: 16px; color: #E8E2D9;">›</div>
+        </div>
+      </div>
+
+      <!-- Sign out -->
+      <div style="background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(45,27,61,0.06);">
+        <div style="padding: 16px; text-align: center;">
+          <div style="font-size: 15px; color: #DC2626; font-weight: 500;">Sign Out</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: rgba(201,150,60,0.08); border-radius: 12px; border: 1px solid rgba(201,150,60,0.15);">
+  <p style="margin: 0; color: #666; font-size: 13px;"><strong>Notes:</strong> Season stats are computed from session data (attended = sessions where user was in rsvps and session date is past). Payment card shows current month status with gold accent when paid. Menu items are stubs for now — Notifications preferences, My Uploads filter, Help can be built later. Sign Out is red, isolated in its own card to prevent accidental taps.</p>
+</div>

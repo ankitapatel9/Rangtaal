@@ -5,6 +5,8 @@ export interface UserDoc {
   name: string;
   phoneNumber: string;
   role: UserRole;
+  paid?: boolean;
+  fcmToken?: string;
   createdAt: number;
   paid: boolean;
   fcmToken: string | null;

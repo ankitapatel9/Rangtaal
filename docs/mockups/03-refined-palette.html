@@ -1,0 +1,102 @@
+<h2>Refined Color Palette</h2>
+<p class="subtitle">Fewer colors, more discipline. Pick the system that feels right.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 24px; background: #FAF7F2;">
+      <!-- Palette A: Plum + Gold (2 colors only) -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <div style="flex: 2; height: 48px; background: #2D1B3D; border-radius: 10px;"></div>
+        <div style="flex: 1; height: 48px; background: #C9963C; border-radius: 10px;"></div>
+        <div style="flex: 2; height: 48px; background: #FAF7F2; border-radius: 10px; border: 1px solid #E8E2D9;"></div>
+      </div>
+      <!-- Mini mockup -->
+      <div style="background: white; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(45,27,61,0.06); margin-bottom: 10px;">
+        <div style="font-size: 13px; font-weight: 700; color: #2D1B3D;">Tuesday, April 21</div>
+        <div style="font-size: 11px; color: #999; margin-top: 2px;">7:30 PM · 8 going</div>
+        <div style="background: #C9963C; border-radius: 8px; padding: 8px; text-align: center; margin-top: 10px;">
+          <span style="font-size: 12px; font-weight: 700; color: white;">RSVP</span>
+        </div>
+      </div>
+      <div style="background: white; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(45,27,61,0.06); border-left: 3px solid #C9963C;">
+        <div style="font-size: 13px; font-weight: 700; color: #2D1B3D;">You're in! ✓</div>
+        <div style="font-size: 11px; color: #999;">Tap to cancel</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Plum & Gold</h3>
+      <p>Just two brand colors. Deep plum for text and headers, saffron gold for every action and accent. Confirmed state uses gold border instead of a third color. Maximum restraint — Apple-level simplicity.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 24px; background: #FAF7F2;">
+      <!-- Palette B: Plum + Gold + Green (success only) -->
+      <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <div style="flex: 2; height: 48px; background: #2D1B3D; border-radius: 10px;"></div>
+        <div style="flex: 1; height: 48px; background: #C9963C; border-radius: 10px;"></div>
+        <div style="flex: 1; height: 48px; background: #2D6B4F; border-radius: 10px; position: relative;">
+          <span style="position: absolute; bottom: -16px; left: 0; right: 0; text-align: center; font-size: 9px; color: #999;">success only</span>
+        </div>
+        <div style="flex: 2; height: 48px; background: #FAF7F2; border-radius: 10px; border: 1px solid #E8E2D9;"></div>
+      </div>
+      <!-- Mini mockup -->
+      <div style="background: white; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(45,27,61,0.06); margin-bottom: 10px;">
+        <div style="font-size: 13px; font-weight: 700; color: #2D1B3D;">Tuesday, April 21</div>
+        <div style="font-size: 11px; color: #999; margin-top: 2px;">7:30 PM · 8 going</div>
+        <div style="background: #C9963C; border-radius: 8px; padding: 8px; text-align: center; margin-top: 10px;">
+          <span style="font-size: 12px; font-weight: 700; color: white;">RSVP</span>
+        </div>
+      </div>
+      <div style="background: #EDF7F1; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(45,27,61,0.06); border: 1.5px solid #2D6B4F;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 24px; height: 24px; border-radius: 12px; background: #2D6B4F; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white;">✓</div>
+          <div>
+            <div style="font-size: 13px; font-weight: 700; color: #2D6B4F;">You're in!</div>
+            <div style="font-size: 11px; color: #999;">Tap to cancel</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Plum, Gold & Green</h3>
+      <p>Three brand colors, strict roles. Plum = text/identity. Gold = all actions (buttons, links, CTAs). Green = success states only (RSVP'd, Paid). Green never appears unless something is confirmed. Clean semantic system.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Neutral system for both -->
+<div style="margin-top: 24px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #E8E2D9;">
+  <h3 style="margin: 0 0 12px; color: #2D1B3D;">Neutral system (same for both)</h3>
+  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #FAF7F2; border-radius: 10px; border: 1px solid #E8E2D9; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Page bg</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #FFFFFF; border-radius: 10px; border: 1px solid #E8E2D9; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Cards</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #2D1B3D; border-radius: 10px; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Headings</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #5A4B6B; border-radius: 10px; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Body text</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #9CA3AF; border-radius: 10px; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Secondary</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #E8E2D9; border-radius: 10px; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Borders</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="width: 56px; height: 56px; background: #DC2626; border-radius: 10px; margin-bottom: 4px;"></div>
+      <div style="font-size: 10px; color: #999;">Destructive</div>
+    </div>
+  </div>
+  <p style="font-size: 12px; color: #999; margin: 12px 0 0;">Vermillion (#C85A2A) and orange are dropped. Red (#DC2626) is reserved for destructive actions only (cancel session, delete). No gradient accents — single flat colors everywhere.</p>
+</div>
