@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Calendar, Video, MessageCircle, User } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ParticipantLayout() {
   return (
@@ -19,40 +19,40 @@ export default function ParticipantLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Home size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="schedule"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Calendar size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="videos"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Video size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="videocam-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <MessageCircle size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="me"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <User size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />

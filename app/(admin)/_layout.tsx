@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Calendar, Video, Users, User } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function AdminLayout() {
   return (
@@ -19,40 +19,38 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Home size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="sessions"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Calendar size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="community"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Users size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <User size={24} color={color} strokeWidth={focused ? 2 : 1.5} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="finance"
-        options={{
-          href: null,
-        }}
+        options={{ href: null }}
       />
     </Tabs>
   );
