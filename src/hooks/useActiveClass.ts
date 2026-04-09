@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getActiveClass } from "../lib/classes";
+import firestore from "@react-native-firebase/firestore";
 import { ClassDoc } from "../types/class";
 
 export interface UseActiveClassState {
@@ -14,13 +14,28 @@ export function useActiveClass(): UseActiveClassState {
   });
 
   useEffect(() => {
-    let cancelled = false;
-    getActiveClass().then((c) => {
-      if (!cancelled) setState({ class_: c, loading: false });
-    });
-    return () => {
-      cancelled = true;
-    };
+    const unsub = firestore()
+      .collection("classes")
+      .where("active", "==", true)
+      .limit(1)
+      .onSnapshot(
+        (snap) => {
+          if (!snap || snap.empty) {
+            setState({ class_: null, loading: false });
+            return;
+          }
+          const doc = snap.docs[0];
+          setState({
+            class_: { ...(doc.data() as Omit<ClassDoc, "id">), id: doc.id },
+            loading: false,
+          });
+        },
+        (err) => {
+          console.error("useActiveClass error:", err);
+          setState({ class_: null, loading: false });
+        }
+      );
+    return unsub;
   }, []);
 
   return state;

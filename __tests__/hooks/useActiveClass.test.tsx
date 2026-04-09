@@ -1,10 +1,10 @@
 import React from "react";
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { renderHook, act } from "@testing-library/react-native";
 import firestore from "@react-native-firebase/firestore";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 
 describe("useActiveClass", () => {
-  it("starts loading and resolves to the active class doc", async () => {
+  it("starts loading and resolves to the active class doc via onSnapshot", async () => {
     const data = {
       name: "Garba Workshops 2026",
       location: "Roselle Park District",
@@ -19,34 +19,55 @@ describe("useActiveClass", () => {
       createdAt: 1,
       createdBy: "admin1",
     };
-    const getMock = jest.fn().mockResolvedValue({
-      empty: false,
-      docs: [{ id: "c1", data: () => data }],
+    let snapCb: ((snap: any) => void) | undefined;
+    const onSnapshotMock = jest.fn((cb) => {
+      snapCb = cb;
+      return () => undefined;
     });
     (firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({
-        where: jest.fn(() => ({ limit: jest.fn(() => ({ get: getMock })) })),
+        where: jest.fn(() => ({
+          limit: jest.fn(() => ({ onSnapshot: onSnapshotMock })),
+        })),
       })),
     });
 
     const { result } = renderHook(() => useActiveClass());
     expect(result.current.loading).toBe(true);
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      snapCb?.({
+        empty: false,
+        docs: [{ id: "c1", data: () => data }],
+      });
+    });
+
+    expect(result.current.loading).toBe(false);
     expect(result.current.class_?.id).toBe("c1");
     expect(result.current.class_?.name).toBe("Garba Workshops 2026");
   });
 
   it("resolves to null when no active class exists", async () => {
-    const getMock = jest.fn().mockResolvedValue({ empty: true, docs: [] });
+    let snapCb: ((snap: any) => void) | undefined;
+    const onSnapshotMock = jest.fn((cb) => {
+      snapCb = cb;
+      return () => undefined;
+    });
     (firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({
-        where: jest.fn(() => ({ limit: jest.fn(() => ({ get: getMock })) })),
+        where: jest.fn(() => ({
+          limit: jest.fn(() => ({ onSnapshot: onSnapshotMock })),
+        })),
       })),
     });
 
     const { result } = renderHook(() => useActiveClass());
-    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      snapCb?.({ empty: true, docs: [] });
+    });
+
+    expect(result.current.loading).toBe(false);
     expect(result.current.class_).toBeNull();
   });
 });
