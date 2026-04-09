@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
 import { spacing, shadows } from "../theme/spacing";
@@ -8,7 +8,7 @@ export interface SegmentedControlProps {
   options: [string, string];
   selectedIndex: 0 | 1;
   onChange: (index: 0 | 1) => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function SegmentedControl({

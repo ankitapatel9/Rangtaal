@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, StyleProp } from "react-native";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
 import { spacing } from "../theme/spacing";
@@ -9,7 +9,7 @@ export interface SectionHeaderProps {
   rightLabel?: string;
   rightLabelVariant?: "gray" | "gold";
   onRightPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function SectionHeader({

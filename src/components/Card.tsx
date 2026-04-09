@@ -1,11 +1,11 @@
 import React from "react";
-import { View, StyleSheet, ViewStyle } from "react-native";
+import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { colors } from "../theme/colors";
 import { spacing, shadows } from "../theme/spacing";
 
 export interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   goldBorder?: boolean; // gold left border for active/selected/confirmed states
   elevated?: boolean;   // stronger shadow for hero cards
   noPadding?: boolean;

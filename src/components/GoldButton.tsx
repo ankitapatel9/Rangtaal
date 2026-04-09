@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
+  StyleProp,
   Platform,
 } from "react-native";
 import { colors } from "../theme/colors";
@@ -30,7 +31,7 @@ export interface GoldButtonProps {
   variant?: GoldButtonVariant;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function GoldButton({

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { Avatar } from "./Avatar";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
@@ -9,6 +9,7 @@ export interface AvatarStackProps {
   maxVisible?: number;
   size?: number;
   overlap?: number;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function AvatarStack({
@@ -16,12 +17,13 @@ export function AvatarStack({
   maxVisible = 4,
   size = 32,
   overlap = 10,
+  style,
 }: AvatarStackProps) {
   const visible = names.slice(0, maxVisible);
   const overflow = names.length - visible.length;
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, style]}>
       {visible.map((name, i) => (
         <View
           key={i}

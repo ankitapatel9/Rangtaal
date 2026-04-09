@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ViewStyle,
+  StyleProp,
 } from "react-native";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
@@ -13,7 +14,7 @@ import { spacing } from "../theme/spacing";
 export interface PaymentBannerProps {
   dueDate?: string;   // e.g. "May 1" — if omitted, generic message shown
   amount?: string;    // e.g. "$60"
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   onDismiss?: () => void;
 }
 
