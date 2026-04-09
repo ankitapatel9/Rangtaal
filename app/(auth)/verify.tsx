@@ -1,16 +1,37 @@
-import { useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useState, useRef } from "react";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  SafeAreaView,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
 import { confirmCode } from "../../src/lib/auth";
-import { pendingConfirmation } from "./login";
+import { pendingConfirmation, pendingPhone } from "./login";
+import { colors } from "../../src/theme/colors";
+import { typography } from "../../src/theme/typography";
+import { spacing } from "../../src/theme/spacing";
+
+const CODE_LENGTH = 6;
 
 export default function VerifyScreen() {
-  const [code, setCode] = useState("");
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [submitting, setSubmitting] = useState(false);
+  const inputRefs = useRef<Array<TextInput | null>>(Array(CODE_LENGTH).fill(null));
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const router = useRouter();
 
-  async function handleVerify() {
-    if (code.length !== 6) {
+  const displayPhone = pendingPhone
+    ? `+1 ${pendingPhone}`
+    : "+1 (555) 555-5555";
+
+  async function handleVerify(code: string) {
+    if (code.length !== CODE_LENGTH) {
       Alert.alert("Invalid code", "Enter the 6-digit code from your text.");
       return;
     }
@@ -30,42 +51,183 @@ export default function VerifyScreen() {
     }
   }
 
+  function handleDigitChange(text: string, index: number) {
+    const digit = text.replace(/\D/g, "").slice(-1);
+    const newDigits = [...digits];
+    newDigits[index] = digit;
+    setDigits(newDigits);
+
+    if (digit && index < CODE_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    if (newDigits.every((d) => d !== "") && digit) {
+      const code = newDigits.join("");
+      handleVerify(code);
+    }
+  }
+
+  function handleKeyPress(key: string, index: number) {
+    if (key === "Backspace" && !digits[index] && index > 0) {
+      const newDigits = [...digits];
+      newDigits[index - 1] = "";
+      setDigits(newDigits);
+      inputRefs.current[index - 1]?.focus();
+    }
+  }
+
+  function handleResend() {
+    router.replace("/(auth)/login" as any);
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Enter the code</Text>
-      <Text style={styles.subtitle}>We sent a 6-digit code to your phone.</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="123456"
-        keyboardType="number-pad"
-        value={code}
-        onChangeText={setCode}
-        maxLength={6}
-      />
+    <SafeAreaView style={styles.safeArea}>
+      {/* Back button */}
       <TouchableOpacity
-        style={[styles.button, submitting && { opacity: 0.5 }]}
-        onPress={handleVerify}
-        disabled={submitting}
+        style={styles.backButton}
+        onPress={() => router.back()}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Text style={styles.buttonText}>{submitting ? "Verifying..." : "Verify"}</Text>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <ChevronLeft size={20} {...({ stroke: colors.accent, strokeWidth: 2 } as any)} />
+        <Text style={styles.backText}>Back</Text>
       </TouchableOpacity>
-    </View>
+
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <Text style={styles.title}>Enter code</Text>
+          <Text style={styles.subtitle}>Sent to {displayPhone}</Text>
+        </View>
+
+        {/* 6 digit boxes */}
+        <View style={styles.codeRow}>
+          {digits.map((digit, index) => (
+            <TextInput
+              key={index}
+              ref={(ref) => {
+                inputRefs.current[index] = ref;
+              }}
+              style={[
+                styles.digitBox,
+                focusedIndex === index
+                  ? styles.digitBoxFocused
+                  : styles.digitBoxBlur,
+              ]}
+              value={digit}
+              onChangeText={(text) => handleDigitChange(text, index)}
+              onKeyPress={({ nativeEvent }) =>
+                handleKeyPress(nativeEvent.key, index)
+              }
+              onFocus={() => setFocusedIndex(index)}
+              onBlur={() => setFocusedIndex(null)}
+              keyboardType="number-pad"
+              maxLength={2}
+              textAlign="center"
+              selectionColor={colors.accent}
+              returnKeyType="done"
+              editable={!submitting}
+              caretHidden={false}
+            />
+          ))}
+        </View>
+
+        {/* Resend */}
+        <View style={styles.resendRow}>
+          <Text style={styles.resendLabel}>Didn't get the code? </Text>
+          <TouchableOpacity onPress={handleResend} disabled={submitting}>
+            <Text style={styles.resendLink}>Resend</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer note */}
+        <Text style={styles.footerNote}>
+          Code auto-verifies when all 6 digits are entered
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
+const DIGIT_BOX_SIZE = { width: 48, height: 56 };
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "center", backgroundColor: "#FEE7F1" },
-  title: { fontSize: 28, fontWeight: "700", color: "#3B0764", textAlign: "center" },
-  subtitle: { fontSize: 14, color: "#3B0764", textAlign: "center", marginVertical: 12 },
-  input: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    height: 56,
-    fontSize: 24,
-    textAlign: "center",
-    letterSpacing: 8,
-    marginVertical: 16
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
   },
-  button: { backgroundColor: "#FACC15", borderRadius: 32, paddingVertical: 16, alignItems: "center" },
-  buttonText: { fontSize: 16, fontWeight: "700", color: "#3B0764" }
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.pagePadding,
+    paddingTop: Platform.OS === "android" ? spacing.base : spacing.sm,
+    paddingBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  backText: {
+    fontSize: typography.fontSize.body,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.accent,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: spacing.pagePadding,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xl,
+  },
+  headerSection: {
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: typography.fontWeight.extraBold,
+    color: colors.primary,
+    letterSpacing: 0.3,
+  },
+  subtitle: {
+    fontSize: typography.fontSize.body,
+    color: colors.textSecondary,
+  },
+  codeRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "center",
+  },
+  digitBox: {
+    ...DIGIT_BOX_SIZE,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 2,
+    fontSize: 22,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary,
+  },
+  digitBoxFocused: {
+    borderColor: colors.accent,
+  },
+  digitBoxBlur: {
+    borderColor: colors.border,
+  },
+  resendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resendLabel: {
+    fontSize: typography.fontSize.body,
+    color: colors.textSecondary,
+  },
+  resendLink: {
+    fontSize: typography.fontSize.body,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.accent,
+  },
+  footerNote: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+  },
 });

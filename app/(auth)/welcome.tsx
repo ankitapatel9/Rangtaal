@@ -1,7 +1,20 @@
-import { useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import auth from "@react-native-firebase/auth";
 import { createUserDoc } from "../../src/lib/users";
+import { GoldButton } from "../../src/components/GoldButton";
+import { colors } from "../../src/theme/colors";
+import { typography } from "../../src/theme/typography";
+import { spacing } from "../../src/theme/spacing";
 
 export default function WelcomeScreen() {
   const [name, setName] = useState("");
@@ -34,47 +47,92 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Rangtaal!</Text>
-      <Text style={styles.subtitle}>
-        Let's get you started. How should your community address you?
-      </Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TouchableOpacity
-        style={[styles.button, submitting && { opacity: 0.5 }]}
-        onPress={handleFinish}
-        disabled={submitting}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={styles.buttonText}>
-          {submitting ? "Saving..." : "Finish Onboarding →"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Welcome to Rangtaal 🪘</Text>
+            <Text style={styles.subtitle}>Let's get you set up.</Text>
+          </View>
+
+          {/* Name input */}
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabel}>Your name</Text>
+            <TextInput
+              style={styles.nameInput}
+              placeholder="Enter your name"
+              placeholderTextColor={colors.textSecondary}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={handleFinish}
+              editable={!submitting}
+            />
+          </View>
+
+          {/* CTA */}
+          <GoldButton
+            label={submitting ? "Saving…" : "Join Rangtaal"}
+            onPress={handleFinish}
+            loading={submitting}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "center", backgroundColor: "#FEE7F1" },
-  title: { fontSize: 28, fontWeight: "700", color: "#3B0764", textAlign: "center" },
-  subtitle: { fontSize: 14, color: "#3B0764", textAlign: "center", marginVertical: 12 },
-  input: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    height: 48,
-    paddingHorizontal: 16,
-    marginVertical: 16,
-    fontSize: 16
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
   },
-  button: {
-    backgroundColor: "#FACC15",
-    borderRadius: 32,
-    paddingVertical: 16,
-    alignItems: "center"
+  flex: {
+    flex: 1,
   },
-  buttonText: { fontSize: 16, fontWeight: "700", color: "#3B0764" }
+  container: {
+    flex: 1,
+    paddingHorizontal: spacing.pagePadding,
+    justifyContent: "center",
+    gap: spacing.xl,
+  },
+  headerSection: {
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: typography.fontWeight.extraBold,
+    color: colors.primary,
+    textAlign: "center",
+    lineHeight: 34,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+  inputSection: {
+    gap: spacing.xs,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
+  },
+  nameInput: {
+    backgroundColor: colors.card,
+    borderRadius: spacing.cardRadius,
+    borderWidth: 1,
+    borderColor: colors.border,
+    height: 52,
+    paddingHorizontal: spacing.base,
+    fontSize: 16,
+    color: colors.primary,
+  },
 });
