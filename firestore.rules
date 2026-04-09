@@ -17,8 +17,9 @@ service cloud.firestore {
       allow create: if isSelf(uid)
         && request.resource.data.role == 'participant'
         && request.resource.data.uid == uid;
-      allow update: if isSelf(uid)
-        && request.resource.data.role == resource.data.role;
+      allow update: if isAdmin() || (isSelf(uid)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.paid == resource.data.paid);
       allow delete: if false;
     }
 
