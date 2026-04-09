@@ -2,6 +2,7 @@ import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { signOut } from "../../src/lib/auth";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
+import { colors } from "../../src/theme/colors";
 
 export default function ParticipantMe() {
   const { user: authUser } = useAuth();
@@ -34,23 +35,23 @@ export default function ParticipantMe() {
 }
 
 const styles = StyleSheet.create({
-  c: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "#FEE7F1" },
-  t: { fontSize: 28, fontWeight: "700", color: "#3B0764", marginBottom: 20 },
+  c: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: colors.pageBackground },
+  t: { fontSize: 28, fontWeight: "700", color: colors.primary, marginBottom: 20 },
   infoCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     width: "100%",
     marginBottom: 16
   },
-  label: { fontSize: 11, fontWeight: "700", color: "#7C3AED", textTransform: "uppercase", marginTop: 8 },
-  value: { fontSize: 16, color: "#3B0764", marginTop: 2 },
+  label: { fontSize: 11, fontWeight: "700", color: colors.primary, textTransform: "uppercase", marginTop: 8 },
+  value: { fontSize: 16, color: colors.primary, marginTop: 2 },
   badge: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 6, marginBottom: 24 },
-  paidBadge: { backgroundColor: "#DCFCE7" },
-  unpaidBadge: { backgroundColor: "#F3F4F6" },
+  paidBadge: { backgroundColor: "#FFF8EB" },
+  unpaidBadge: { backgroundColor: "#F5F0EA" },
   badgeText: { fontSize: 14, fontWeight: "700" },
-  paidText: { color: "#166534" },
-  unpaidText: { color: "#6B7280" },
-  btn: { backgroundColor: "#FACC15", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 32 },
-  btnText: { color: "#3B0764", fontWeight: "700" }
+  paidText: { color: colors.accent },
+  unpaidText: { color: colors.textBody },
+  btn: { backgroundColor: colors.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 32 },
+  btnText: { color: colors.primary, fontWeight: "700" }
 });

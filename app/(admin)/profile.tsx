@@ -1,5 +1,6 @@
 import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { signOut } from "../../src/lib/auth";
+import { colors } from "../../src/theme/colors";
 
 export default function AdminProfile() {
   return (
@@ -14,9 +15,9 @@ export default function AdminProfile() {
 }
 
 const styles = StyleSheet.create({
-  c: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "#FEE7F1" },
-  t: { fontSize: 28, fontWeight: "700", color: "#3B0764" },
-  s: { fontSize: 14, color: "#3B0764", marginTop: 8, textAlign: "center" },
-  btn: { marginTop: 24, backgroundColor: "#FACC15", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 32 },
-  btnText: { color: "#3B0764", fontWeight: "700" }
+  c: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: colors.pageBackground },
+  t: { fontSize: 28, fontWeight: "700", color: colors.primary },
+  s: { fontSize: 14, color: colors.primary, marginTop: 8, textAlign: "center" },
+  btn: { marginTop: 24, backgroundColor: colors.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 32 },
+  btnText: { color: colors.primary, fontWeight: "700" }
 });

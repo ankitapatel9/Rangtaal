@@ -15,6 +15,7 @@ import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
 import { useTutorials } from "../../src/hooks/useTutorials";
 import type { TutorialDoc } from "../../src/types/tutorial";
+import { colors } from "../../src/theme/colors";
 
 function TutorialRow({ tutorial, paid }: { tutorial: TutorialDoc; paid: boolean }) {
   const [playing, setPlaying] = useState(false);
@@ -58,7 +59,7 @@ function SessionSection({ sessionId, dateLabel, paid }: { sessionId: string; dat
   const { tutorials, loading } = useTutorials(sessionId);
 
   if (loading) {
-    return <ActivityIndicator style={{ paddingVertical: 12 }} color="#3B0764" size="small" />;
+    return <ActivityIndicator style={{ paddingVertical: 12 }} color={colors.primary} size="small" />;
   }
   if (tutorials.length === 0) return null;
 
@@ -84,7 +85,7 @@ export default function ParticipantVideos() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#3B0764" />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -124,24 +125,24 @@ export default function ParticipantVideos() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FEE7F1" },
+  container: { flex: 1, backgroundColor: colors.pageBackground },
   content: { padding: 20, paddingBottom: 40 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FEE7F1", padding: 24 },
-  heading: { fontSize: 28, fontWeight: "700", color: "#3B0764", marginBottom: 20 },
-  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#3B0764", marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, color: "#6B7280", textAlign: "center", lineHeight: 20 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.pageBackground, padding: 24 },
+  heading: { fontSize: 28, fontWeight: "700", color: colors.primary, marginBottom: 20 },
+  emptyTitle: { fontSize: 20, fontWeight: "700", color: colors.primary, marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: colors.textBody, textAlign: "center", lineHeight: 20 },
   section: { marginBottom: 24 },
   sectionHeader: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#3B0764",
+    color: colors.primary,
     marginBottom: 10,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3D2E5",
+    borderBottomColor: colors.border,
   },
   tutorialCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 10,
     overflow: "hidden",
@@ -155,15 +156,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#FEE7F1",
+    backgroundColor: colors.pageBackground,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
   tutorialIconText: { fontSize: 20 },
   tutorialInfo: { flex: 1 },
-  tutorialTitle: { fontSize: 15, fontWeight: "600", color: "#3B0764" },
-  tutorialDescription: { fontSize: 12, color: "#6B7280", marginTop: 2 },
-  paywallHint: { fontSize: 11, color: "#FACC15", marginTop: 4, fontWeight: "600" },
+  tutorialTitle: { fontSize: 15, fontWeight: "600", color: colors.primary },
+  tutorialDescription: { fontSize: 12, color: colors.textBody, marginTop: 2 },
+  paywallHint: { fontSize: 11, color: colors.accent, marginTop: 4, fontWeight: "600" },
   videoPlayer: { width: "100%", height: 220 },
 });

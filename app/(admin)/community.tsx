@@ -10,6 +10,7 @@ import {
 import { useAllUsers } from "../../src/hooks/useAllUsers";
 import { toggleUserPaid } from "../../src/lib/users";
 import { UserDoc } from "../../src/types/user";
+import { colors } from "../../src/theme/colors";
 
 function UserRow({ item }: { item: UserDoc }) {
   const handlePress = () => {
@@ -52,7 +53,7 @@ export default function AdminCommunity() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3B0764" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -72,13 +73,13 @@ export default function AdminCommunity() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FEE7F1", paddingTop: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FEE7F1" },
-  title: { fontSize: 28, fontWeight: "700", color: "#3B0764", paddingHorizontal: 16, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: colors.pageBackground, paddingTop: 16 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.pageBackground },
+  title: { fontSize: 28, fontWeight: "700", color: colors.primary, paddingHorizontal: 16, marginBottom: 12 },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
-  empty: { color: "#3B0764", textAlign: "center", marginTop: 32 },
+  empty: { color: colors.primary, textAlign: "center", marginTop: 32 },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -88,14 +89,14 @@ const styles = StyleSheet.create({
   },
   cardLeft: { flex: 1 },
   cardRight: { alignItems: "flex-end", gap: 6 },
-  name: { fontSize: 16, fontWeight: "600", color: "#3B0764" },
-  phone: { fontSize: 13, color: "#7C3AED", marginTop: 2 },
+  name: { fontSize: 16, fontWeight: "600", color: colors.primary },
+  phone: { fontSize: 13, color: colors.textBody, marginTop: 2 },
   badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  adminBadge: { backgroundColor: "#FACC15" },
-  participantBadge: { backgroundColor: "#E9D5FF" },
-  paidBadge: { backgroundColor: "#DCFCE7" },
-  unpaidBadge: { backgroundColor: "#F3F4F6" },
-  badgeText: { fontSize: 11, fontWeight: "700", color: "#3B0764" },
-  paidText: { color: "#166534" },
-  unpaidText: { color: "#6B7280" }
+  adminBadge: { backgroundColor: colors.accent },
+  participantBadge: { backgroundColor: colors.border },
+  paidBadge: { backgroundColor: "#FFF8EB" },
+  unpaidBadge: { backgroundColor: "#F5F0EA" },
+  badgeText: { fontSize: 11, fontWeight: "700", color: colors.primary },
+  paidText: { color: colors.accent },
+  unpaidText: { color: colors.textBody }
 });
