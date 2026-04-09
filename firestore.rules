@@ -21,5 +21,20 @@ service cloud.firestore {
         && request.resource.data.role == resource.data.role;
       allow delete: if false;
     }
+
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isAdmin();
+      // Admin can update anything.
+      // Participants can update ONLY the rsvps array with their own uid.
+      allow update: if isAdmin() ||
+        (isSignedIn()
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rsvps']));
+    }
   }
 }
