@@ -18,6 +18,7 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
     const inParticipantGroup = segments[0] === "(participant)";
     const inAdminGroup = segments[0] === "(admin)";
+    const inSessionRoute = segments[0] === "session";
 
     if (!authUser) {
       if (!inAuthGroup) router.replace("/(auth)/login" as any);
@@ -28,6 +29,10 @@ export default function RootLayout() {
       if ((segments as string[])[1] !== "welcome") router.replace("/(auth)/welcome" as any);
       return;
     }
+
+    // Shared routes like /session/[id] are accessible to both roles
+    // — skip the role-group redirect if the user is already on one.
+    if (inSessionRoute) return;
 
     if (userDoc?.role === "admin") {
       if (!inAdminGroup) router.replace("/(admin)/home" as any);
