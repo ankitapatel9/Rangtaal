@@ -14,6 +14,6 @@ export async function createUserDoc(input: NewUserInput): Promise<void> {
 
 export async function getUserDoc(uid: string): Promise<UserDoc | null> {
   const snap = await firestore().collection("users").doc(uid).get();
-  if (!snap.exists) return null;
+  if (!snap.exists()) return null;
   return snap.data() as UserDoc;
 }

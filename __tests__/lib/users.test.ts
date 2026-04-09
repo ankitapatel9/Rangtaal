@@ -35,7 +35,7 @@ describe("getUserDoc", () => {
       role: "admin",
       createdAt: 1700000000
     };
-    const getMock = jest.fn().mockResolvedValue({ exists: true, data: () => data });
+    const getMock = jest.fn().mockResolvedValue({ exists: () => true, data: () => data });
     (firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({ doc: jest.fn(() => ({ get: getMock })) }))
     });
@@ -45,7 +45,7 @@ describe("getUserDoc", () => {
   });
 
   it("returns null when the user doc does not exist", async () => {
-    const getMock = jest.fn().mockResolvedValue({ exists: false });
+    const getMock = jest.fn().mockResolvedValue({ exists: () => false });
     (firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({ doc: jest.fn(() => ({ get: getMock })) }))
     });
