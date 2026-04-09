@@ -1,0 +1,90 @@
+<h2>Gallery Hub — Instagram vs TikTok</h2>
+<p class="subtitle">Pick the feed style.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 0; min-height: 500px; background: #FAF7F2; overflow: hidden;">
+      <!-- Instagram style -->
+      <div style="padding: 10px 14px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #E8E2D9;">
+        <div style="width: 28px; height: 28px; border-radius: 14px; background: #5A4B6B; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white;">MP</div>
+        <div style="font-size: 13px; font-weight: 600; color: #2D1B3D;">Meera</div>
+        <div style="font-size: 11px; color: #9CA3AF;">· Apr 14</div>
+      </div>
+      <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, #E8D5B8, #C9963C);"></div>
+      <div style="padding: 8px 14px;">
+        <div style="display: flex; gap: 14px; margin-bottom: 4px;">
+          <span style="font-size: 22px; color: #C9963C;">♥</span>
+          <span style="font-size: 22px;">💬</span>
+          <span style="font-size: 22px;">↗</span>
+        </div>
+        <div style="font-size: 13px; font-weight: 600; color: #2D1B3D;">12 likes</div>
+        <div style="font-size: 13px; color: #2D1B3D;"><strong>Nik</strong> Great shot! 🔥</div>
+        <div style="font-size: 12px; color: #9CA3AF;">View all 3 comments</div>
+      </div>
+      <div style="height: 1px; background: #E8E2D9;"></div>
+      <div style="padding: 10px 14px; display: flex; gap: 8px; align-items: center;">
+        <div style="width: 28px; height: 28px; border-radius: 14px; background: #C9963C; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white;">AP</div>
+        <div style="font-size: 13px; font-weight: 600; color: #2D1B3D;">Ankita</div>
+        <div style="font-size: 11px; color: #9CA3AF;">· Apr 14</div>
+      </div>
+      <div style="aspect-ratio: 16/9; background: linear-gradient(135deg, #2D1B3D, #3D2B4D); display: flex; align-items: center; justify-content: center;">
+        <div style="width: 40px; height: 40px; border-radius: 20px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+          <div style="width: 0; height: 0; border-left: 12px solid white; border-top: 8px solid transparent; border-bottom: 8px solid transparent; margin-left: 2px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Instagram Feed</h3>
+      <p>Scroll through posts. Edge-to-edge media, engagement below each. Carousel dots for multi-photo. Best for mixed content (photos, short videos, multi-photo).</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 0; min-height: 500px; background: #000; overflow: hidden; position: relative;">
+      <!-- TikTok style — full screen, one post -->
+      <div style="width: 100%; height: 500px; background: linear-gradient(180deg, #2D1B3D 0%, #1a0f28 100%); display: flex; align-items: center; justify-content: center; position: relative;">
+        <!-- Video content area -->
+        <div style="font-size: 14px; color: rgba(255,255,255,0.2);">Full-screen video</div>
+
+        <!-- Right side actions -->
+        <div style="position: absolute; right: 12px; bottom: 120px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div style="text-align: center;">
+            <div style="width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #C9963C;">♥</div>
+            <div style="font-size: 11px; color: white; margin-top: 2px;">12</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: white;">💬</div>
+            <div style="font-size: 11px; color: white; margin-top: 2px;">3</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: white;">↗</div>
+          </div>
+        </div>
+
+        <!-- Bottom overlay -->
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; background: linear-gradient(transparent, rgba(0,0,0,0.7));">
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <div style="width: 32px; height: 32px; border-radius: 16px; background: #C9963C; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white;">AP</div>
+            <div style="font-size: 14px; font-weight: 600; color: white;">Ankita</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.5);">Apr 14 session</div>
+          </div>
+          <div style="font-size: 14px; color: white; line-height: 1.4;">Three-step Garba breakdown 🪘 Watch the footwork closely!</div>
+        </div>
+
+        <!-- Swipe indicator -->
+        <div style="position: absolute; bottom: 4px; left: 0; right: 0; text-align: center;">
+          <div style="font-size: 10px; color: rgba(255,255,255,0.3);">↑ swipe for next</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: TikTok / Reels</h3>
+      <p>Full-screen vertical scroll. One post per screen, swipe up for next. Right-side action buttons. Best for video-first content. Immersive but photos feel awkward at full-screen.</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 20px; padding: 16px; background: rgba(201,150,60,0.08); border-radius: 12px; border: 1px solid rgba(201,150,60,0.15);">
+  <h3 style="margin: 0 0 8px; font-size: 14px;">My take:</h3>
+  <p style="margin: 0; color: #666; font-size: 13px;">Rangtaal has a mix of photos AND videos. <strong>Instagram (A)</strong> handles both naturally — photos fill the width, videos play inline, multi-photo carousels work. TikTok (B) is great for video-only feeds but photos stretched to full-screen look odd. You could also do a <strong>hybrid</strong>: Instagram feed by default, tap a video to go full-screen TikTok-style playback.</p>
+</div>
