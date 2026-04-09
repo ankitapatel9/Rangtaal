@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>560643723293-c2r4ktqn44fdf3kmm3m2ung5dfronnj2.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.560643723293-c2r4ktqn44fdf3kmm3m2ung5dfronnj2</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDDqiSiaidsAwlFgdayFbK0MC_rdObRs54</string>
+	<key>GCM_SENDER_ID</key>
+	<string>560643723293</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.rangtaal.app</string>
+	<key>PROJECT_ID</key>
+	<string>rangtaal-app</string>
+	<key>STORAGE_BUCKET</key>
+	<string>rangtaal-app.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:560643723293:ios:e31f3e0a9c77852a02b6f4</string>
+</dict>
+</plist>

@@ -44,3 +44,7 @@ yarn-error.*
 # Firebase config (do not commit — contains project secrets)
 GoogleService-Info.plist
 google-services.json
+
+# Cloud Functions build output
+functions/lib/
+functions/node_modules/

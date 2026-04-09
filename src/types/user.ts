@@ -7,6 +7,7 @@ export interface UserDoc {
   role: UserRole;
   createdAt: number;
   paid: boolean;
+  fcmToken: string | null;
 }
 
 export interface NewUserInput {

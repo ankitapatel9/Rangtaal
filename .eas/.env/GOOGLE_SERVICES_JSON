@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "560643723293",
+    "project_id": "rangtaal-app",
+    "storage_bucket": "rangtaal-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560643723293:android:4f424b637972e0ee02b6f4",
+        "android_client_info": {
+          "package_name": "com.rangtaal.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAd4yxD3--ame_4796SLxpxWPaQz1v26O4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
