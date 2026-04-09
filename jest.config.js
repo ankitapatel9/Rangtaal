@@ -6,5 +6,5 @@ module.exports = {
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   testMatch: ["**/__tests__/**/*.test.{ts,tsx}"],
-  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/functions/"]
+  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/functions/", "<rootDir>/.claude/"]
 };
