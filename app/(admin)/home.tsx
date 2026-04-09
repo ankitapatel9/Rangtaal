@@ -23,28 +23,33 @@ import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
 import { spacing } from "../../src/theme/spacing";
 import { SessionDoc } from "../../src/types/session";
+import { ClassDoc } from "../../src/types/class";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function formatDayLabel(dateMs: number): string {
-  return new Date(dateMs)
+function formatDayLabel(dateStr: string): string {
+  return new Date(dateStr)
     .toLocaleDateString("en-US", { weekday: "long" })
     .toUpperCase();
 }
 
-function formatDate(dateMs: number): string {
-  return new Date(dateMs).toLocaleDateString("en-US", {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 }
 
+function formatTimeRange(class_: ClassDoc): string {
+  return `${class_.startTime} – ${class_.endTime}`;
+}
+
 function getNextSession(sessions: SessionDoc[]): SessionDoc | null {
   const now = Date.now();
   const upcoming = sessions
-    .filter((s) => !s.cancelled && s.date >= now)
-    .sort((a, b) => a.date - b.date);
+    .filter((s) => s.status === "upcoming" && new Date(s.date).getTime() >= now)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return upcoming[0] ?? null;
 }
 
@@ -52,14 +57,15 @@ function getNextSession(sessions: SessionDoc[]): SessionDoc | null {
 
 interface HeroCardProps {
   session: SessionDoc;
+  class_: ClassDoc;
   userName: string;
   onPress: () => void;
 }
 
-function NextSessionHero({ session, userName, onPress }: HeroCardProps) {
+function NextSessionHero({ session, class_, userName, onPress }: HeroCardProps) {
   const dayLabel = formatDayLabel(session.date);
   const dateStr = formatDate(session.date);
-  const rsvpCount = session.rsvpUids.length;
+  const rsvpCount = session.rsvps.length;
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.hero}>
@@ -67,8 +73,8 @@ function NextSessionHero({ session, userName, onPress }: HeroCardProps) {
       <View style={styles.heroRow}>
         <View style={styles.heroDateBlock}>
           <Text style={styles.heroDate}>{dateStr}</Text>
-          <Text style={styles.heroTime}>{session.time}</Text>
-          <Text style={styles.heroLocation}>{session.location}</Text>
+          <Text style={styles.heroTime}>{formatTimeRange(class_)}</Text>
+          <Text style={styles.heroLocation}>{class_.location}</Text>
         </View>
         <View style={styles.heroCountBlock}>
           <Text style={styles.heroCount}>{rsvpCount}</Text>
@@ -154,9 +160,10 @@ export default function AdminHome() {
         showsVerticalScrollIndicator={false}
       >
         {/* Next session hero */}
-        {nextSession != null ? (
+        {nextSession != null && class_ != null ? (
           <NextSessionHero
             session={nextSession}
+            class_={class_}
             userName={userName}
             onPress={() => navigateToSession(nextSession.id)}
           />

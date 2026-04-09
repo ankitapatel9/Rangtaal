@@ -15,6 +15,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
+import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSession } from "../../src/hooks/useSession";
 import { useTutorials } from "../../src/hooks/useTutorials";
 import { useMedia } from "../../src/hooks/useMedia";
@@ -33,7 +34,9 @@ import {
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
 import { spacing } from "../../src/theme/spacing";
-import { TutorialDoc, MediaDoc } from "../../src/types/session";
+import { TutorialDoc } from "../../src/types/tutorial";
+import { MediaDoc } from "../../src/types/media";
+import { ClassDoc } from "../../src/types/class";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GALLERY_COL = 3;
@@ -42,23 +45,21 @@ const GALLERY_SIZE = (SCREEN_WIDTH - spacing.pagePadding * 2 - spacing.xs * 2) /
 // ─── Section 1: Plum hero header ─────────────────────────────────────────────
 
 interface HeaderSectionProps {
-  date: number;
-  time: string;
-  location: string;
-  address?: string;
-  cancelled?: boolean;
+  dateStr: string;
+  class_: ClassDoc | null;
+  cancelled: boolean;
   onBack: () => void;
 }
 
-function formatLongDate(ms: number): string {
-  return new Date(ms).toLocaleDateString("en-US", {
+function formatLongDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 }
 
-function HeaderSection({ date, time, location, address, cancelled, onBack }: HeaderSectionProps) {
+function HeaderSection({ dateStr, class_, cancelled, onBack }: HeaderSectionProps) {
   return (
     <View style={styles.heroSection}>
       <SafeAreaView>
@@ -69,15 +70,19 @@ function HeaderSection({ date, time, location, address, cancelled, onBack }: Hea
       <Text style={styles.heroLabel}>
         {cancelled ? "CANCELLED SESSION" : "UPCOMING SESSION"}
       </Text>
-      <Text style={styles.heroDate}>{formatLongDate(date)}</Text>
-      <Text style={styles.heroTime}>{time}</Text>
-      <View style={styles.heroLocationRow}>
-        <Text style={styles.heroLocationIcon}>📍</Text>
-        <View>
-          <Text style={styles.heroLocationName}>{location}</Text>
-          {address != null && <Text style={styles.heroAddress}>{address}</Text>}
+      <Text style={styles.heroDate}>{formatLongDate(dateStr)}</Text>
+      {class_ != null && (
+        <Text style={styles.heroTime}>{class_.startTime} – {class_.endTime}</Text>
+      )}
+      {class_ != null && (
+        <View style={styles.heroLocationRow}>
+          <Text style={styles.heroLocationIcon}>📍</Text>
+          <View>
+            <Text style={styles.heroLocationName}>{class_.location}</Text>
+            <Text style={styles.heroAddress}>{class_.address}</Text>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -86,25 +91,25 @@ function HeaderSection({ date, time, location, address, cancelled, onBack }: Hea
 
 interface RsvpSectionProps {
   sessionId: string;
-  rsvpUids: string[];
+  rsvps: string[];
   userId: string;
   userName: string;
-  cancelled?: boolean;
-  cancelReason?: string;
+  cancelled: boolean;
+  cancellationReason: string | null;
   userPaid: boolean;
 }
 
 function RsvpSection({
   sessionId,
-  rsvpUids,
+  rsvps,
   userId,
   userName,
   cancelled,
-  cancelReason,
+  cancellationReason,
 }: RsvpSectionProps) {
   const [loading, setLoading] = useState(false);
-  const isRsvpd = rsvpUids.includes(userId);
-  const rsvpNames = rsvpUids.map((_, i) => `Attendee ${i + 1}`);
+  const isRsvpd = rsvps.includes(userId);
+  const rsvpNames = rsvps.map((_, i) => `Attendee ${i + 1}`);
 
   async function handleRsvpToggle() {
     if (!userId) return;
@@ -126,8 +131,8 @@ function RsvpSection({
     return (
       <View style={[styles.cancelledBanner]}>
         <Text style={styles.cancelledBannerTitle}>This session was cancelled</Text>
-        {cancelReason != null && cancelReason.length > 0 && (
-          <Text style={styles.cancelledBannerReason}>{cancelReason}</Text>
+        {cancellationReason != null && cancellationReason.length > 0 && (
+          <Text style={styles.cancelledBannerReason}>{cancellationReason}</Text>
         )}
       </View>
     );
@@ -138,7 +143,7 @@ function RsvpSection({
       <View style={styles.rsvpRow}>
         <AvatarStack names={rsvpNames} size={32} maxVisible={5} />
         <Text style={styles.rsvpCount}>
-          {rsvpUids.length} {rsvpUids.length === 1 ? "person" : "people"} going
+          {rsvps.length} {rsvps.length === 1 ? "person" : "people"} going
         </Text>
       </View>
 
@@ -175,7 +180,7 @@ function RsvpSection({
 interface AdminCancelSectionProps {
   sessionId: string;
   adminUid: string;
-  cancelled?: boolean;
+  cancelled: boolean;
 }
 
 function AdminCancelSection({ sessionId, adminUid, cancelled }: AdminCancelSectionProps) {
@@ -267,7 +272,7 @@ interface TutorialsSectionProps {
 
 function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProps) {
   function handleTutorialPress(t: TutorialDoc) {
-    if (!userPaid && t.paywalled !== false) {
+    if (!userPaid) {
       Alert.alert("Unlock Required", "Contact admin to get access to tutorials.");
       return;
     }
@@ -290,7 +295,7 @@ function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProp
         </Card>
       ) : (
         tutorials.map((t) => {
-          const locked = !userPaid && t.paywalled !== false;
+          const locked = !userPaid;
           return (
             <TouchableOpacity key={t.id} onPress={() => handleTutorialPress(t)} activeOpacity={0.8}>
               <Card style={styles.tutorialCard}>
@@ -307,12 +312,6 @@ function TutorialsSection({ tutorials, userPaid, isAdmin }: TutorialsSectionProp
                     {t.description != null && (
                       <Text style={styles.tutorialDesc} numberOfLines={2}>{t.description}</Text>
                     )}
-                    <View style={styles.tutorialMeta}>
-                      {t.duration != null && (
-                        <Text style={styles.tutorialMetaText}>{t.duration}</Text>
-                      )}
-                      <Text style={styles.tutorialMetaText}>by {t.uploaderName}</Text>
-                    </View>
                   </View>
                 </View>
               </Card>
@@ -346,13 +345,13 @@ function GallerySection({ media, isAdmin, userId }: GallerySectionProps) {
 
   function handleMediaPress(m: MediaDoc) {
     if (m.type === "photo") {
-      setPreviewUri(m.url);
+      setPreviewUri(m.storageUrl);
     } else {
       Alert.alert("Video", "Video playback coming in Phase 2.");
     }
   }
 
-  const canDelete = (m: MediaDoc) => isAdmin || m.uploaderUid === userId;
+  const canDelete = (m: MediaDoc) => isAdmin || m.uploadedBy === userId;
 
   return (
     <View style={styles.section}>
@@ -383,7 +382,7 @@ function GallerySection({ media, isAdmin, userId }: GallerySectionProps) {
               style={styles.galleryCell}
             >
               <Image
-                source={{ uri: m.url }}
+                source={{ uri: m.storageUrl }}
                 style={styles.galleryImage}
                 resizeMode="cover"
               />
@@ -457,6 +456,7 @@ export default function SessionDetail() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const { user: userDoc } = useUser(authUser?.uid);
+  const { class_ } = useActiveClass();
   const { session, loading } = useSession(id);
   const { tutorials } = useTutorials(id);
   const { media } = useMedia(id);
@@ -477,6 +477,8 @@ export default function SessionDetail() {
   if (loading) return <LoadingScreen onBack={handleBack} />;
   if (session == null) return <NotFoundScreen onBack={handleBack} />;
 
+  const isCancelled = session.status === "cancelled";
+
   return (
     <View style={styles.safe}>
       <ScrollView
@@ -486,22 +488,20 @@ export default function SessionDetail() {
       >
         {/* Section 1: Plum hero header */}
         <HeaderSection
-          date={session.date}
-          time={session.time}
-          location={session.location}
-          address={session.address}
-          cancelled={session.cancelled}
+          dateStr={session.date}
+          class_={class_}
+          cancelled={isCancelled}
           onBack={handleBack}
         />
 
         {/* Section 2: RSVP */}
         <RsvpSection
           sessionId={session.id}
-          rsvpUids={session.rsvpUids}
+          rsvps={session.rsvps}
           userId={userId}
           userName={userName}
-          cancelled={session.cancelled}
-          cancelReason={session.cancelReason}
+          cancelled={isCancelled}
+          cancellationReason={session.cancellationReason}
           userPaid={userPaid}
         />
 
@@ -510,7 +510,7 @@ export default function SessionDetail() {
           <AdminCancelSection
             sessionId={session.id}
             adminUid={userId}
-            cancelled={session.cancelled}
+            cancelled={isCancelled}
           />
         )}
 

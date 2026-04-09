@@ -21,6 +21,7 @@ import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
 import { spacing } from "../../src/theme/spacing";
 import { SessionDoc } from "../../src/types/session";
+import { ClassDoc } from "../../src/types/class";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -34,25 +35,25 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-function formatShortDate(ms: number): string {
-  return new Date(ms).toLocaleDateString("en-US", {
+function formatShortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
 }
 
-function formatLongDate(ms: number): string {
-  return new Date(ms).toLocaleDateString("en-US", {
+function formatLongDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 }
 
-function isThisWeek(ms: number): boolean {
+function isThisWeek(dateStr: string): boolean {
   const now = new Date();
-  const date = new Date(ms);
+  const date = new Date(dateStr);
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
@@ -66,10 +67,11 @@ function isThisWeek(ms: number): boolean {
 
 interface CalendarViewProps {
   sessions: SessionDoc[];
+  class_: ClassDoc | null;
   onSelectSession: (session: SessionDoc) => void;
 }
 
-function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
+function CalendarView({ sessions, class_, onSelectSession }: CalendarViewProps) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -192,16 +194,22 @@ function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
             <View style={styles.previewRow}>
               <View style={styles.previewInfo}>
                 <Text style={styles.previewDate}>{formatLongDate(selectedSession.date)}</Text>
-                <Text style={styles.previewTime}>{selectedSession.time}</Text>
-                <Text style={styles.previewLocation}>{selectedSession.location}</Text>
+                {class_ != null && (
+                  <Text style={styles.previewTime}>
+                    {class_.startTime} – {class_.endTime}
+                  </Text>
+                )}
+                {class_ != null && (
+                  <Text style={styles.previewLocation}>{class_.location}</Text>
+                )}
                 <View style={styles.previewMeta}>
                   <AvatarStack
-                    names={selectedSession.rsvpUids.map((_, i) => `User ${i + 1}`)}
+                    names={selectedSession.rsvps.map((_, i) => `User ${i + 1}`)}
                     size={24}
                     maxVisible={4}
                   />
                   <Text style={styles.previewCount}>
-                    {selectedSession.rsvpUids.length} going
+                    {selectedSession.rsvps.length} going
                   </Text>
                 </View>
               </View>
@@ -224,16 +232,16 @@ interface ListViewProps {
 function ListView({ sessions, onSelectSession }: ListViewProps) {
   const now = Date.now();
   const upcoming = sessions
-    .filter((s) => !s.cancelled && s.date >= now)
-    .sort((a, b) => a.date - b.date);
+    .filter((s) => s.status !== "cancelled" && new Date(s.date).getTime() >= now)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const past = sessions
-    .filter((s) => !s.cancelled && s.date < now)
-    .sort((a, b) => b.date - a.date);
-  const cancelled = sessions.filter((s) => s.cancelled);
+    .filter((s) => s.status !== "cancelled" && new Date(s.date).getTime() < now)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const cancelled = sessions.filter((s) => s.status === "cancelled");
 
   function SessionRow({ session }: { session: SessionDoc }) {
     const thisWeek = isThisWeek(session.date);
-    const isCancelled = session.cancelled;
+    const isCancelled = session.status === "cancelled";
     return (
       <TouchableOpacity onPress={() => onSelectSession(session)} activeOpacity={0.8}>
         <Card
@@ -246,8 +254,7 @@ function ListView({ sessions, onSelectSession }: ListViewProps) {
                 {formatShortDate(session.date)}
               </Text>
               <Text style={styles.listMeta}>
-                {session.rsvpUids.length} going
-                {(session.tutorialCount ?? 0) > 0 ? ` · ${session.tutorialCount} tutorials` : ""}
+                {session.rsvps.length} going
               </Text>
               {isCancelled && <Text style={styles.cancelledLabel}>Cancelled</Text>}
             </View>
@@ -356,7 +363,7 @@ export default function AdminSessions() {
         showsVerticalScrollIndicator={false}
       >
         {viewIndex === 0 ? (
-          <CalendarView sessions={sessions} onSelectSession={navigateToSession} />
+          <CalendarView sessions={sessions} class_={class_} onSelectSession={navigateToSession} />
         ) : (
           <ListView sessions={sessions} onSelectSession={navigateToSession} />
         )}

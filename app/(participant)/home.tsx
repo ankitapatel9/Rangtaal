@@ -24,31 +24,32 @@ import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
 import { spacing } from "../../src/theme/spacing";
 import { SessionDoc } from "../../src/types/session";
+import { ClassDoc } from "../../src/types/class";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function formatDayLabel(dateMs: number): string {
-  const date = new Date(dateMs);
+function formatDayLabel(dateStr: string): string {
+  const date = new Date(dateStr);
   return date.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
 }
 
-function formatDate(dateMs: number): string {
-  return new Date(dateMs).toLocaleDateString("en-US", {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 }
 
-function formatTime(session: SessionDoc): string {
-  return session.time;
+function formatTimeRange(class_: ClassDoc): string {
+  return `${class_.startTime} – ${class_.endTime}`;
 }
 
 function getNextSession(sessions: SessionDoc[]): SessionDoc | null {
   const now = Date.now();
   const upcoming = sessions
-    .filter((s) => !s.cancelled && s.date >= now)
-    .sort((a, b) => a.date - b.date);
+    .filter((s) => s.status === "upcoming" && new Date(s.date).getTime() >= now)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return upcoming[0] ?? null;
 }
 
@@ -56,17 +57,18 @@ function getNextSession(sessions: SessionDoc[]): SessionDoc | null {
 
 interface HeroCardProps {
   session: SessionDoc;
+  class_: ClassDoc;
   userName: string;
   userId: string;
   onPress: () => void;
 }
 
-function NextSessionHero({ session, userName, userId, onPress }: HeroCardProps) {
+function NextSessionHero({ session, class_, userName, userId, onPress }: HeroCardProps) {
   const dayLabel = formatDayLabel(session.date);
   const dateStr = formatDate(session.date);
-  const timeStr = formatTime(session);
-  const rsvpCount = session.rsvpUids.length;
-  const isRsvpd = session.rsvpUids.includes(userId);
+  const timeStr = formatTimeRange(class_);
+  const rsvpCount = session.rsvps.length;
+  const isRsvpd = session.rsvps.includes(userId);
 
   // Build avatar names from rsvp UIDs — in MVP we only have the current user's name
   const rsvpNames = isRsvpd ? [userName] : [];
@@ -85,7 +87,7 @@ function NextSessionHero({ session, userName, userId, onPress }: HeroCardProps) 
         <View style={styles.heroDateBlock}>
           <Text style={styles.heroDate}>{dateStr}</Text>
           <Text style={styles.heroTime}>{timeStr}</Text>
-          <Text style={styles.heroLocation}>{session.location}</Text>
+          <Text style={styles.heroLocation}>{class_.location}</Text>
         </View>
         <View style={styles.heroCountBlock}>
           <Text style={styles.heroCount}>{rsvpCount}</Text>
@@ -186,9 +188,10 @@ export default function ParticipantHome() {
         )}
 
         {/* Next session hero */}
-        {nextSession != null ? (
+        {nextSession != null && class_ != null ? (
           <NextSessionHero
             session={nextSession}
+            class_={class_}
             userName={userName}
             userId={userId}
             onPress={() => navigateToSession(nextSession.id)}
