@@ -1,14 +1,12 @@
 /**
  * Session Detail Screen
  *
- * Shows session info, RSVP toggle, admin controls, and a Tutorials section.
- *
- * Dependency notes:
- *  - expo-av (video playback) NOT installed — video play is stubbed with Alert
- *  - expo-image-picker NOT installed — image/video picker is stubbed with Alert
- *  - @react-native-firebase/storage NOT installed — upload is stubbed with Alert
- *  - When those packages are added (npm install + expo prebuild), remove the stubs
- *    and uncomment the real implementations marked with TODO.
+ * Sections (top to bottom):
+ *  1. Session Info   — date, time range, location, address
+ *  2. RSVP Toggle    — yellow/purple button, RSVP count, cancellation banner
+ *  3. Admin Controls — cancel session (admins only)
+ *  4. Tutorials      — video list with paywall; admin upload
+ *  5. Gallery        — 3-column media grid; add / delete
  */
 
 import {
@@ -19,173 +17,90 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  TextInput
+  Image,
+  Modal,
+  FlatList,
+  Dimensions,
+  Platform,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { useTutorials } from "../../src/hooks/useTutorials";
-import { createTutorial } from "../../src/lib/tutorials";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState, useRef } from "react";
+import { Video, ResizeMode } from "expo-av";
+import * as ImagePicker from "expo-image-picker";
+import storage from "@react-native-firebase/storage";
+
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
+import { useSession } from "../../src/hooks/useSession";
+import { useActiveClass } from "../../src/hooks/useActiveClass";
+import { useTutorials } from "../../src/hooks/useTutorials";
+import { useMedia } from "../../src/hooks/useMedia";
+
+import { rsvpToSession, removeRsvp, cancelSession } from "../../src/lib/sessions";
+import { createTutorial } from "../../src/lib/tutorials";
+import { createMedia, deleteMedia } from "../../src/lib/media";
+
 import type { TutorialDoc } from "../../src/types/tutorial";
+import type { MediaDoc } from "../../src/types/media";
 
 // ---------------------------------------------------------------------------
-// Paywall helpers
+// Helpers
 // ---------------------------------------------------------------------------
 
-function handlePlayVideo(tutorial: TutorialDoc, paid: boolean) {
-  if (!paid) {
-    Alert.alert(
-      "Unlock Tutorial Videos",
-      "Contact admin to unlock tutorial videos."
-    );
-    return;
-  }
-  // TODO: install expo-av, then replace this Alert with inline Video playback:
-  //   import { Video, ResizeMode } from "expo-av";
-  //   Render <Video source={{ uri: tutorial.videoUrl }} ... />
-  Alert.alert("Play Video", `Playing: ${tutorial.title}\n\n${tutorial.videoUrl}`);
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const CELL_SIZE = (SCREEN_WIDTH - 40 - 4) / 3; // 20px side padding each side, 2px gaps
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatTime(t: string): string {
+  // t = "19:30"
+  const [hStr, mStr] = t.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${mStr.padStart(2, "0")} ${suffix}`;
 }
 
 // ---------------------------------------------------------------------------
-// Admin upload
-// ---------------------------------------------------------------------------
-
-function AdminUploadButton({
-  sessionId,
-  currentCount,
-  uploaderId
-}: {
-  sessionId: string;
-  currentCount: number;
-  uploaderId: string;
-}) {
-  const [uploading, setUploading] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [showForm, setShowForm] = useState(false);
-
-  async function handleUpload() {
-    // TODO: When expo-image-picker and @react-native-firebase/storage are installed:
-    //   1. const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'videos' });
-    //   2. if (result.canceled) return;
-    //   3. const uri = result.assets[0].uri;
-    //   4. const filename = uri.split("/").pop() ?? "video.mp4";
-    //   5. const ref = storage().ref(`tutorials/${sessionId}/${filename}`);
-    //   6. await ref.putFile(uri); setUploading(true) … setUploading(false);
-    //   7. const videoUrl = await ref.getDownloadURL();
-    //   8. await createTutorial({ sessionId, title, description, videoUrl, thumbnailUrl: null, createdBy: uploaderId, order: currentCount });
-
-    // STUB: simulate upload with Alert since packages are missing
-    Alert.alert(
-      "Storage Not Available",
-      "@react-native-firebase/storage, expo-av, and expo-image-picker are not installed.\n\nAdd them and update this stub."
-    );
-  }
-
-  async function handleSubmit() {
-    if (!title.trim()) {
-      Alert.alert("Error", "Please enter a title.");
-      return;
-    }
-    setUploading(true);
-    try {
-      // STUB video URL until real upload is wired up
-      const stubVideoUrl = `https://storage.example.com/tutorials/${sessionId}/stub.mp4`;
-      await createTutorial({
-        sessionId,
-        title: title.trim(),
-        description: description.trim(),
-        videoUrl: stubVideoUrl,
-        thumbnailUrl: null,
-        createdBy: uploaderId,
-        order: currentCount
-      });
-      setTitle("");
-      setDescription("");
-      setShowForm(false);
-    } catch (err) {
-      Alert.alert("Error", "Failed to save tutorial. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  if (uploading) {
-    return (
-      <View style={styles.uploadingRow}>
-        <ActivityIndicator color="#3B0764" />
-        <Text style={styles.uploadingText}>Saving tutorial…</Text>
-      </View>
-    );
-  }
-
-  if (!showForm) {
-    return (
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => setShowForm(true)}
-      >
-        <Text style={styles.uploadButtonText}>+ Upload Tutorial</Text>
-      </TouchableOpacity>
-    );
-  }
-
-  return (
-    <View style={styles.uploadForm}>
-      <Text style={styles.formLabel}>Title *</Text>
-      <TextInput
-        style={styles.input}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Tutorial title"
-        placeholderTextColor="#9CA3AF"
-      />
-      <Text style={styles.formLabel}>Description</Text>
-      <TextInput
-        style={[styles.input, styles.inputMultiline]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Optional description"
-        placeholderTextColor="#9CA3AF"
-        multiline
-      />
-      <View style={styles.formRow}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => setShowForm(false)}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.pickVideoButton} onPress={handleUpload}>
-          <Text style={styles.pickVideoButtonText}>Pick Video</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
-          <Text style={styles.saveButtonText}>Save (stub)</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tutorial card
+// Sub-components
 // ---------------------------------------------------------------------------
 
 function TutorialCard({
   tutorial,
-  paid
+  paid,
 }: {
   tutorial: TutorialDoc;
   paid: boolean;
 }) {
+  const [playing, setPlaying] = useState(false);
+
+  function handlePress() {
+    if (!paid) {
+      Alert.alert(
+        "Unlock Tutorial Videos",
+        "Contact admin to unlock tutorial videos."
+      );
+      return;
+    }
+    setPlaying((prev) => !prev);
+  }
+
   return (
-    <TouchableOpacity
-      style={styles.tutorialCard}
-      onPress={() => handlePlayVideo(tutorial, paid)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.tutorialCardBody}>
+    <View style={styles.tutorialCard}>
+      <TouchableOpacity
+        style={styles.tutorialCardBody}
+        onPress={handlePress}
+        activeOpacity={0.8}
+      >
         <View style={styles.tutorialIcon}>
           <Text style={styles.tutorialIconText}>{paid ? "▶" : "🔒"}</Text>
         </View>
@@ -197,79 +112,483 @@ function TutorialCard({
             </Text>
           ) : null}
         </View>
-      </View>
+      </TouchableOpacity>
+
+      {paid && playing && (
+        <Video
+          source={{ uri: tutorial.videoUrl }}
+          style={styles.inlineVideo}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay
+        />
+      )}
+
       {!paid && (
         <Text style={styles.paywallHint}>Contact admin to unlock</Text>
+      )}
+    </View>
+  );
+}
+
+function AdminUploadTutorialButton({
+  sessionId,
+  currentCount,
+  uploaderId,
+}: {
+  sessionId: string;
+  currentCount: number;
+  uploaderId: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handleUpload() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+    });
+    if (result.canceled || !result.assets.length) return;
+
+    const asset = result.assets[0];
+    const uri = asset.uri;
+
+    const title = await promptTitle();
+    if (!title) return;
+
+    setUploading(true);
+    try {
+      const filename = uri.split("/").pop() ?? `tutorial_${Date.now()}.mp4`;
+      const ref = storage().ref(`tutorials/${sessionId}/${filename}`);
+      await ref.putFile(uri);
+      const videoUrl = await ref.getDownloadURL();
+      await createTutorial({
+        sessionId,
+        title,
+        description: "",
+        videoUrl,
+        thumbnailUrl: null,
+        createdBy: uploaderId,
+        order: currentCount,
+      });
+    } catch (err) {
+      Alert.alert("Upload Failed", "Could not upload tutorial. Try again.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function promptTitle(): Promise<string | null> {
+    return new Promise((resolve) => {
+      Alert.prompt(
+        "Tutorial Title",
+        "Enter a title for this tutorial",
+        [
+          { text: "Cancel", onPress: () => resolve(null), style: "cancel" },
+          { text: "Save", onPress: (text: string | undefined) => resolve(text?.trim() || null) },
+        ],
+        "plain-text"
+      );
+    });
+  }
+
+  if (uploading) {
+    return (
+      <View style={styles.uploadingRow}>
+        <ActivityIndicator color="#3B0764" />
+        <Text style={styles.uploadingText}>Uploading tutorial…</Text>
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity style={styles.uploadButton} onPress={handleUpload}>
+      <Text style={styles.uploadButtonText}>+ Upload Tutorial</Text>
+    </TouchableOpacity>
+  );
+}
+
+function MediaCell({
+  item,
+  onPress,
+  onDelete,
+  canDelete,
+}: {
+  item: MediaDoc;
+  onPress: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.mediaCell, { width: CELL_SIZE, height: CELL_SIZE }]}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      {item.type === "photo" ? (
+        <Image
+          source={{ uri: item.storageUrl }}
+          style={styles.mediaCellImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.mediaCellVideo}>
+          <Text style={styles.mediaCellPlayIcon}>▶</Text>
+        </View>
+      )}
+      {canDelete && (
+        <TouchableOpacity style={styles.deleteMediaBtn} onPress={onDelete}>
+          <Text style={styles.deleteMediaBtnText}>✕</Text>
+        </TouchableOpacity>
       )}
     </TouchableOpacity>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main screen
+// Main Screen
 // ---------------------------------------------------------------------------
 
 export default function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+
   const { user: authUser } = useAuth();
   const { user: userDoc } = useUser(authUser?.uid);
+  const { session, loading: sessionLoading } = useSession(id);
+  const { class_: classDoc } = useActiveClass();
   const { tutorials, loading: tutorialsLoading } = useTutorials(id);
+  const { media, loading: mediaLoading } = useMedia(id);
 
   const isAdmin = userDoc?.role === "admin";
-  const isPaid = (userDoc as any)?.paid === true;
+  const isPaid = userDoc?.paid === true;
+
+  // RSVP state
+  const [rsvping, setRsvping] = useState(false);
+  const hasRsvp =
+    !!authUser && !!(session?.rsvps ?? []).includes(authUser.uid);
+
+  // Gallery modal state
+  const [selectedMedia, setSelectedMedia] = useState<MediaDoc | null>(null);
+
+  // Media upload state
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+
+  // -------------------------------------------------------------------------
+  // Loading / not-found guards
+  // -------------------------------------------------------------------------
+
+  if (sessionLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#3B0764" />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.notFoundText}>Session not found.</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // RSVP handlers
+  // -------------------------------------------------------------------------
+
+  async function handleRsvpToggle() {
+    if (!authUser || !id) return;
+    setRsvping(true);
+    try {
+      if (hasRsvp) {
+        await removeRsvp(id, authUser.uid);
+      } else {
+        await rsvpToSession(id, authUser.uid);
+      }
+    } catch {
+      Alert.alert("Error", "Could not update RSVP. Please try again.");
+    } finally {
+      setRsvping(false);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Admin cancel handler
+  // -------------------------------------------------------------------------
+
+  function handleCancelSession() {
+    if (!id || !authUser) return;
+    Alert.prompt(
+      "Cancel Session",
+      "Enter a reason for cancellation:",
+      async (reason) => {
+        if (!reason?.trim()) return;
+        try {
+          await cancelSession(id, reason.trim(), authUser.uid);
+        } catch {
+          Alert.alert("Error", "Could not cancel session. Please try again.");
+        }
+      },
+      "plain-text"
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Media upload handler
+  // -------------------------------------------------------------------------
+
+  async function handleAddMedia() {
+    if (!authUser || !id) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+    });
+    if (result.canceled || !result.assets.length) return;
+
+    const asset = result.assets[0];
+    const uri = asset.uri;
+    const isVideo = asset.type === "video";
+
+    setUploadingMedia(true);
+    try {
+      const ext = uri.split(".").pop() ?? (isVideo ? "mp4" : "jpg");
+      const filename = `${Date.now()}.${ext}`;
+      const ref = storage().ref(`sessions/${id}/media/${filename}`);
+      await ref.putFile(uri);
+      const storageUrl = await ref.getDownloadURL();
+      await createMedia({
+        sessionId: id,
+        type: isVideo ? "video" : "photo",
+        storageUrl,
+        uploadedBy: authUser.uid,
+      });
+    } catch {
+      Alert.alert("Upload Failed", "Could not upload media. Try again.");
+    } finally {
+      setUploadingMedia(false);
+    }
+  }
+
+  async function handleDeleteMedia(item: MediaDoc) {
+    Alert.alert("Delete", "Remove this media item?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteMedia(item.id);
+          } catch {
+            Alert.alert("Error", "Could not delete media.");
+          }
+        },
+      },
+    ]);
+  }
+
+  // -------------------------------------------------------------------------
+  // Render helpers
+  // -------------------------------------------------------------------------
+
+  const isCancelled = session.status === "cancelled";
+  const rsvpCount = (session.rsvps ?? []).length;
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      {/* Session header */}
-      <Text style={styles.heading}>Session</Text>
-      <Text style={styles.sessionId}>{id}</Text>
+      {/* ================================================================ */}
+      {/* 1. Session Info                                                   */}
+      {/* ================================================================ */}
+      <View style={styles.infoCard}>
+        <Text style={styles.dateText}>{formatDate(session.date)}</Text>
 
-      {/* RSVP area — stub, Phase 2 will wire real sessions */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>RSVP</Text>
-        <Text style={styles.cardSubtitle}>
-          RSVP toggle arrives in Phase 2 (Class &amp; Schedule).
-        </Text>
+        {classDoc && (
+          <>
+            <Text style={styles.timeText}>
+              {formatTime(classDoc.startTime)} – {formatTime(classDoc.endTime)}
+            </Text>
+            <View style={styles.locationRow}>
+              <Text style={styles.locationLabel}>📍</Text>
+              <View>
+                <Text style={styles.locationName}>{classDoc.location}</Text>
+                <Text style={styles.locationAddress}>{classDoc.address}</Text>
+              </View>
+            </View>
+          </>
+        )}
       </View>
 
-      {/* Admin box stub */}
-      {isAdmin && (
-        <View style={[styles.card, styles.adminCard]}>
-          <Text style={styles.adminCardTitle}>Admin Controls</Text>
-          <Text style={styles.cardSubtitle}>
-            Admin class controls arrive in Phase 2.
+      {/* ================================================================ */}
+      {/* 2. RSVP / Cancellation                                            */}
+      {/* ================================================================ */}
+      {isCancelled ? (
+        <View style={styles.cancelledBanner}>
+          <Text style={styles.cancelledTitle}>Session Cancelled</Text>
+          {session.cancellationReason ? (
+            <Text style={styles.cancelledReason}>
+              {session.cancellationReason}
+            </Text>
+          ) : null}
+        </View>
+      ) : (
+        <View style={styles.rsvpSection}>
+          <TouchableOpacity
+            style={[styles.rsvpButton, hasRsvp && styles.rsvpButtonActive]}
+            onPress={handleRsvpToggle}
+            disabled={rsvping || !authUser}
+            activeOpacity={0.8}
+          >
+            {rsvping ? (
+              <ActivityIndicator
+                color={hasRsvp ? "#FACC15" : "#3B0764"}
+                size="small"
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.rsvpButtonText,
+                  hasRsvp && styles.rsvpButtonTextActive,
+                ]}
+              >
+                {hasRsvp ? "You're in! (Tap to remove)" : "RSVP"}
+              </Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.rsvpCount}>
+            {rsvpCount === 1 ? "1 person going" : `${rsvpCount} people going`}
           </Text>
         </View>
       )}
 
-      {/* Tutorials section */}
+      {/* ================================================================ */}
+      {/* 3. Admin Controls                                                 */}
+      {/* ================================================================ */}
+      {isAdmin && !isCancelled && (
+        <View style={styles.adminSection}>
+          <TouchableOpacity
+            style={styles.cancelSessionButton}
+            onPress={handleCancelSession}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.cancelSessionButtonText}>Cancel Session</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ================================================================ */}
+      {/* 4. Tutorials                                                      */}
+      {/* ================================================================ */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Tutorials</Text>
+        <Text style={styles.sectionTitle}>
+          Tutorials{tutorials.length > 0 ? ` (${tutorials.length})` : ""}
+        </Text>
       </View>
 
       {tutorialsLoading ? (
-        <ActivityIndicator
-          style={styles.spinner}
-          color="#3B0764"
-        />
+        <ActivityIndicator style={styles.spinner} color="#3B0764" />
       ) : tutorials.length === 0 ? (
         <Text style={styles.emptyText}>No tutorials yet.</Text>
       ) : (
         tutorials.map((t) => (
-          <TutorialCard key={t.id} tutorial={t} paid={isPaid} />
+          <TutorialCard key={t.id} tutorial={t} paid={isPaid || isAdmin} />
         ))
       )}
 
       {isAdmin && id ? (
-        <AdminUploadButton
+        <AdminUploadTutorialButton
           sessionId={id}
           currentCount={tutorials.length}
           uploaderId={authUser?.uid ?? ""}
         />
       ) : null}
+
+      {/* ================================================================ */}
+      {/* 5. Gallery                                                        */}
+      {/* ================================================================ */}
+      <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+        <Text style={styles.sectionTitle}>
+          Gallery{media.length > 0 ? ` (${media.length})` : ""}
+        </Text>
+      </View>
+
+      {mediaLoading ? (
+        <ActivityIndicator style={styles.spinner} color="#3B0764" />
+      ) : media.length === 0 ? (
+        <Text style={styles.emptyText}>No photos or videos yet.</Text>
+      ) : (
+        <View style={styles.galleryGrid}>
+          {media.map((item) => {
+            const canDelete =
+              isAdmin || item.uploadedBy === (authUser?.uid ?? "");
+            return (
+              <MediaCell
+                key={item.id}
+                item={item}
+                canDelete={canDelete}
+                onPress={() => setSelectedMedia(item)}
+                onDelete={() => handleDeleteMedia(item)}
+              />
+            );
+          })}
+        </View>
+      )}
+
+      {authUser && (
+        <TouchableOpacity
+          style={[styles.uploadButton, { marginTop: 12 }]}
+          onPress={handleAddMedia}
+          disabled={uploadingMedia}
+        >
+          {uploadingMedia ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.uploadButtonText}>+ Add Photo / Video</Text>
+          )}
+        </TouchableOpacity>
+      )}
+
+      {/* ================================================================ */}
+      {/* Gallery full-screen modal                                         */}
+      {/* ================================================================ */}
+      <Modal
+        visible={!!selectedMedia}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedMedia(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.modalClose}
+            onPress={() => setSelectedMedia(null)}
+          >
+            <Text style={styles.modalCloseText}>✕</Text>
+          </TouchableOpacity>
+
+          {selectedMedia?.type === "photo" ? (
+            <Image
+              source={{ uri: selectedMedia.storageUrl }}
+              style={styles.modalMedia}
+              resizeMode="contain"
+            />
+          ) : selectedMedia?.type === "video" ? (
+            <Video
+              source={{ uri: selectedMedia.storageUrl }}
+              style={styles.modalMedia}
+              useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay
+            />
+          ) : null}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -280,12 +599,26 @@ export default function SessionDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FEE7F1" },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 60 },
 
-  heading: { fontSize: 28, fontWeight: "700", color: "#3B0764", marginBottom: 4 },
-  sessionId: { fontSize: 12, color: "#9CA3AF", marginBottom: 20 },
+  centered: {
+    flex: 1,
+    backgroundColor: "#FEE7F1",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  notFoundText: { fontSize: 18, color: "#3B0764", marginBottom: 16 },
+  backButton: {
+    backgroundColor: "#3B0764",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  backButtonText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15 },
 
-  card: {
+  // Session info card
+  infoCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
@@ -294,19 +627,61 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    elevation: 2
+    elevation: 2,
   },
-  cardTitle: { fontSize: 18, fontWeight: "600", color: "#3B0764", marginBottom: 6 },
-  cardSubtitle: { fontSize: 13, color: "#6B7280" },
+  dateText: { fontSize: 20, fontWeight: "700", color: "#3B0764", marginBottom: 4 },
+  timeText: { fontSize: 15, color: "#6B7280", marginBottom: 10 },
+  locationRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  locationLabel: { fontSize: 16, marginTop: 1 },
+  locationName: { fontSize: 15, fontWeight: "600", color: "#3B0764" },
+  locationAddress: { fontSize: 13, color: "#6B7280" },
 
-  adminCard: { borderLeftWidth: 4, borderLeftColor: "#FACC15" },
-  adminCardTitle: { fontSize: 18, fontWeight: "600", color: "#3B0764", marginBottom: 6 },
+  // RSVP section
+  rsvpSection: { marginBottom: 16 },
+  rsvpButton: {
+    backgroundColor: "#FACC15",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rsvpButtonActive: { backgroundColor: "#3B0764" },
+  rsvpButtonText: { fontSize: 16, fontWeight: "700", color: "#3B0764" },
+  rsvpButtonTextActive: { color: "#FACC15" },
+  rsvpCount: {
+    marginTop: 8,
+    textAlign: "center",
+    fontSize: 13,
+    color: "#6B7280",
+  },
 
-  sectionHeader: { marginBottom: 12, marginTop: 8 },
+  // Cancellation banner
+  cancelledBanner: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#991B1B",
+  },
+  cancelledTitle: { fontSize: 16, fontWeight: "700", color: "#991B1B", marginBottom: 4 },
+  cancelledReason: { fontSize: 14, color: "#991B1B" },
+
+  // Admin section
+  adminSection: { marginBottom: 16 },
+  cancelSessionButton: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  cancelSessionButtonText: { fontSize: 15, fontWeight: "700", color: "#991B1B" },
+
+  // Section headers
+  sectionHeader: { marginBottom: 12 },
   sectionTitle: { fontSize: 20, fontWeight: "700", color: "#3B0764" },
-
   spinner: { marginTop: 20 },
-  emptyText: { color: "#6B7280", fontSize: 14, textAlign: "center", marginTop: 16 },
+  emptyText: { color: "#6B7280", fontSize: 14, textAlign: "center", marginTop: 8 },
 
   // Tutorial card
   tutorialCard: {
@@ -318,7 +693,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    elevation: 2
+    elevation: 2,
   },
   tutorialCardBody: { flexDirection: "row", alignItems: "center" },
   tutorialIcon: {
@@ -328,68 +703,77 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEE7F1",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12
+    marginRight: 12,
   },
   tutorialIconText: { fontSize: 18 },
   tutorialInfo: { flex: 1 },
   tutorialTitle: { fontSize: 15, fontWeight: "600", color: "#3B0764" },
   tutorialDescription: { fontSize: 12, color: "#6B7280", marginTop: 2 },
   paywallHint: { fontSize: 11, color: "#FACC15", marginTop: 6, fontWeight: "600" },
+  inlineVideo: { height: 200, marginTop: 12, borderRadius: 8 },
 
-  // Admin upload form
+  // Upload button (shared by tutorials + media)
   uploadButton: {
-    marginTop: 12,
     backgroundColor: "#3B0764",
     borderRadius: 10,
     paddingVertical: 12,
-    alignItems: "center"
+    alignItems: "center",
   },
   uploadButtonText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15 },
-
   uploadingRow: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   uploadingText: { color: "#3B0764", marginLeft: 8 },
 
-  uploadForm: {
-    marginTop: 12,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16
+  // Gallery grid
+  galleryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 2,
   },
-  formLabel: { fontSize: 13, fontWeight: "600", color: "#3B0764", marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 14,
-    color: "#3B0764",
-    marginBottom: 12
+  mediaCell: {
+    borderRadius: 6,
+    overflow: "hidden",
+    backgroundColor: "#E5E7EB",
   },
-  inputMultiline: { minHeight: 72, textAlignVertical: "top" },
-  formRow: { flexDirection: "row", gap: 8 },
-  cancelButton: {
+  mediaCellImage: { width: "100%", height: "100%" },
+  mediaCellVideo: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    alignItems: "center"
-  },
-  cancelButtonText: { color: "#6B7280", fontWeight: "600" },
-  pickVideoButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#FACC15",
-    alignItems: "center"
-  },
-  pickVideoButtonText: { color: "#3B0764", fontWeight: "600" },
-  saveButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#3B0764",
-    alignItems: "center"
   },
-  saveButtonText: { color: "#FFFFFF", fontWeight: "600" }
+  mediaCellPlayIcon: { fontSize: 28, color: "#FACC15" },
+  deleteMediaBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteMediaBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
+
+  // Full-screen modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalClose: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCloseText: { color: "#FFFFFF", fontSize: 18, fontWeight: "700" },
+  modalMedia: { width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.2 },
 });
