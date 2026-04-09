@@ -31,11 +31,14 @@ service cloud.firestore {
     match /sessions/{sessionId} {
       allow read: if isSignedIn();
       allow create, delete: if isAdmin();
-      // Admin can update anything.
-      // Participants can update ONLY the rsvps array with their own uid.
       allow update: if isAdmin() ||
         (isSignedIn()
          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rsvps']));
+    }
+
+    match /tutorials/{tutorialId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
   }
 }
