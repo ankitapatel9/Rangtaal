@@ -41,10 +41,10 @@ export default function ParticipantLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="gallery"
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-outline" color={color} size={size} />
+            <Ionicons name="images-outline" color={color} size={size} />
           ),
         }}
       />

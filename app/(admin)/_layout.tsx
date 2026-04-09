@@ -41,6 +41,14 @@ export default function AdminLayout() {
         }}
       />
       <Tabs.Screen
+        name="gallery"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="images-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           tabBarIcon: ({ color, size }) => (
