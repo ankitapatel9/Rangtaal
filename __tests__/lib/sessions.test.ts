@@ -1,5 +1,5 @@
 import firestore from "@react-native-firebase/firestore";
-import { getSessionsForClass, rsvpToSession } from "../../src/lib/sessions";
+import { getSessionsForClass, rsvpToSession, removeRsvp } from "../../src/lib/sessions";
 
 describe("getSessionsForClass", () => {
   it("queries sessions by classId ordered by date asc", async () => {
@@ -37,6 +37,23 @@ describe("rsvpToSession", () => {
 
     expect(updateMock).toHaveBeenCalledWith({
       rsvps: { __op: "arrayUnion", val: "user1" },
+    });
+  });
+});
+
+describe("removeRsvp", () => {
+  it("calls update with arrayRemove(userId) on the session doc", async () => {
+    const updateMock = jest.fn().mockResolvedValue(undefined);
+    (firestore as unknown as jest.Mock).mockReturnValue({
+      collection: jest.fn(() => ({
+        doc: jest.fn(() => ({ update: updateMock })),
+      })),
+    });
+
+    await removeRsvp("session1", "user1");
+
+    expect(updateMock).toHaveBeenCalledWith({
+      rsvps: { __op: "arrayRemove", val: "user1" },
     });
   });
 });

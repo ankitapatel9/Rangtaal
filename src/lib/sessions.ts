@@ -21,3 +21,12 @@ export async function rsvpToSession(sessionId: string, userId: string): Promise<
       rsvps: firestore.FieldValue.arrayUnion(userId),
     });
 }
+
+export async function removeRsvp(sessionId: string, userId: string): Promise<void> {
+  await firestore()
+    .collection("sessions")
+    .doc(sessionId)
+    .update({
+      rsvps: firestore.FieldValue.arrayRemove(userId),
+    });
+}
