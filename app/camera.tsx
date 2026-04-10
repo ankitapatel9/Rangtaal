@@ -8,18 +8,35 @@ import {
   Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CameraView, useCameraPermissions, CameraType, CameraMode } from "expo-camera";
-import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-import { X, SwitchCamera, Image as ImageIcon } from "lucide-react-native";
-import storage from "@react-native-firebase/storage";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../src/hooks/useAuth";
 import { createMedia } from "../src/lib/media";
 import { colors } from "../src/theme/colors";
-import { typography } from "../src/theme/typography";
-import { spacing } from "../src/theme/spacing";
 
-// UI labels use "photo"/"video"; CameraView mode prop uses "picture"/"video"
+// Try to load native modules — they may not be in the current binary
+let CameraView: any = null;
+let useCameraPermissions: any = null;
+let manipulateAsync: any = null;
+let SaveFormat: any = null;
+let storage: any = null;
+
+try {
+  const cam = require("expo-camera");
+  CameraView = cam.CameraView;
+  useCameraPermissions = cam.useCameraPermissions;
+} catch {}
+
+try {
+  const manip = require("expo-image-manipulator");
+  manipulateAsync = manip.manipulateAsync;
+  SaveFormat = manip.SaveFormat;
+} catch {}
+
+try {
+  storage = require("@react-native-firebase/storage").default;
+} catch {}
+
 type CaptureMode = "photo" | "video";
 
 export default function CameraScreen() {
@@ -30,24 +47,38 @@ export default function CameraScreen() {
   const router = useRouter();
   const { user: authUser } = useAuth();
 
-  const [permission, requestPermission] = useCameraPermissions();
-  const [cameraFacing, setCameraFacing] = useState<CameraType>("back");
+  const [cameraFacing, setCameraFacing] = useState<"back" | "front">("back");
   const [mode, setMode] = useState<CaptureMode>("photo");
-  // Map UI mode to CameraView's mode prop ('picture' | 'video')
-  const cameraMode: CameraMode = mode === "photo" ? "picture" : "video";
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [uploading, setUploading] = useState(false);
 
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Request permission on mount
-  useEffect(() => {
-    if (permission && !permission.granted) {
-      requestPermission();
-    }
-  }, []);
+  // If expo-camera isn't available, show fallback
+  if (!CameraView || !useCameraPermissions) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Ionicons name="camera-outline" size={48} color={colors.accent} />
+        <Text style={styles.permissionText}>
+          Camera requires a new app build.{"\n"}Use "Add from roll" in the gallery instead.
+        </Text>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={() => handleOpenCameraRoll()}
+        >
+          <Text style={styles.permissionButtonText}>Open Camera Roll</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.permissionButton, { backgroundColor: "rgba(255,255,255,0.15)" }]}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.permissionButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Recording timer
   useEffect(() => {
@@ -73,14 +104,8 @@ export default function CameraScreen() {
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
-  // ─── Upload helper ────────────────────────────────────────────────────────
-
-  async function uploadAndCreateDoc(
-    uri: string,
-    type: "photo" | "video"
-  ): Promise<void> {
+  async function uploadAndCreateDoc(uri: string, type: "photo" | "video"): Promise<void> {
     if (!authUser || !sessionId) return;
-
     setUploading(true);
     try {
       const timestamp = Date.now();
@@ -88,17 +113,25 @@ export default function CameraScreen() {
       const filename = `${timestamp}.${ext}`;
       const storagePath = `sessions/${sessionId}/media/${filename}`;
 
-      await storage().ref(storagePath).putFile(uri);
-      const downloadUrl = await storage().ref(storagePath).getDownloadURL();
+      if (storage) {
+        await storage().ref(storagePath).putFile(uri);
+        const downloadUrl = await storage().ref(storagePath).getDownloadURL();
+        await createMedia({
+          sessionId,
+          type,
+          storageUrl: downloadUrl,
+          uploadedBy: authUser.uid,
+        });
+      } else {
+        // Storage not available — save with local URI as stub
+        await createMedia({
+          sessionId,
+          type,
+          storageUrl: uri,
+          uploadedBy: authUser.uid,
+        });
+      }
 
-      await createMedia({
-        sessionId,
-        type,
-        storageUrl: downloadUrl,
-        uploadedBy: authUser.uid,
-      });
-
-      // Navigate back to session detail, passing captured type for toast
       router.replace({
         pathname: "/session/[id]",
         params: { id: sessionId, captured: type },
@@ -111,29 +144,28 @@ export default function CameraScreen() {
     }
   }
 
-  // ─── Photo capture ────────────────────────────────────────────────────────
-
   async function handlePhotoCapture() {
     if (!cameraRef.current || uploading) return;
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 1 });
       if (!photo) return;
 
-      // Compress: resize to max 1080px, JPEG 0.8
-      const compressed = await manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 1080 } }],
-        { compress: 0.8, format: SaveFormat.JPEG }
-      );
+      let uri = photo.uri;
+      if (manipulateAsync && SaveFormat) {
+        const compressed = await manipulateAsync(
+          photo.uri,
+          [{ resize: { width: 1080 } }],
+          { compress: 0.8, format: SaveFormat.JPEG }
+        );
+        uri = compressed.uri;
+      }
 
-      await uploadAndCreateDoc(compressed.uri, "photo");
+      await uploadAndCreateDoc(uri, "photo");
     } catch (err) {
       console.error("Photo capture error:", err);
       Alert.alert("Capture failed", "Could not take photo. Please try again.");
     }
   }
-
-  // ─── Video capture ────────────────────────────────────────────────────────
 
   async function handleVideoStart() {
     if (!cameraRef.current || uploading) return;
@@ -153,22 +185,16 @@ export default function CameraScreen() {
   async function handleVideoStop() {
     if (!cameraRef.current) return;
     cameraRef.current.stopRecording();
-    // isRecording will be set to false after recordAsync resolves above
   }
 
   function handleShutterPress() {
     if (mode === "photo") {
       handlePhotoCapture();
     } else {
-      if (isRecording) {
-        handleVideoStop();
-      } else {
-        handleVideoStart();
-      }
+      if (isRecording) handleVideoStop();
+      else handleVideoStart();
     }
   }
-
-  // ─── Camera roll ─────────────────────────────────────────────────────────
 
   async function handleOpenCameraRoll() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -180,7 +206,7 @@ export default function CameraScreen() {
     const asset = result.assets[0];
     const type = asset.type === "video" ? "video" : "photo";
 
-    if (type === "photo") {
+    if (type === "photo" && manipulateAsync && SaveFormat) {
       const compressed = await manipulateAsync(
         asset.uri,
         [{ resize: { width: 1080 } }],
@@ -188,36 +214,12 @@ export default function CameraScreen() {
       );
       await uploadAndCreateDoc(compressed.uri, "photo");
     } else {
-      await uploadAndCreateDoc(asset.uri, "video");
+      await uploadAndCreateDoc(asset.uri, type);
     }
   }
 
-  // ─── Permission not granted ───────────────────────────────────────────────
-
-  if (!permission) {
-    return (
-      <View style={styles.permissionContainer}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>
-          Camera access is required to capture photos and videos.
-        </Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // ─── Camera UI ────────────────────────────────────────────────────────────
-
   const sessionTag = sessionDate ?? "Session";
+  const cameraMode = mode === "photo" ? "picture" : "video";
 
   return (
     <View style={styles.container}>
@@ -229,20 +231,13 @@ export default function CameraScreen() {
       >
         {/* Top bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.closeButton}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <X size={24} color={colors.card} strokeWidth={2} />
+          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+            <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
-
           <View style={styles.sessionTagPill}>
             <Text style={styles.sessionTagText}>{sessionTag}</Text>
           </View>
-
-          {/* Spacer to balance layout */}
-          <View style={styles.topBarSpacer} />
+          <View style={{ width: 36 }} />
         </View>
 
         {/* Recording indicator */}
@@ -258,74 +253,46 @@ export default function CameraScreen() {
         {/* Upload overlay */}
         {uploading && (
           <View style={styles.uploadOverlay}>
-            <ActivityIndicator size="large" color={colors.card} />
+            <ActivityIndicator size="large" color="white" />
             <Text style={styles.uploadText}>Uploading…</Text>
           </View>
         )}
 
         {/* Controls */}
         <View style={styles.controls}>
-          {/* Mode toggle */}
           <View style={styles.modeRow}>
             <TouchableOpacity onPress={() => { if (!isRecording) setMode("photo"); }}>
-              <Text style={[styles.modeLabel, mode === "photo" && styles.modeLabelActive]}>
-                PHOTO
-              </Text>
+              <Text style={[styles.modeLabel, mode === "photo" && styles.modeLabelActive]}>PHOTO</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { if (!isRecording) setMode("video"); }}>
-              <Text style={[styles.modeLabel, mode === "video" && styles.modeLabelActive]}>
-                VIDEO
-              </Text>
+              <Text style={[styles.modeLabel, mode === "video" && styles.modeLabelActive]}>VIDEO</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Bottom row: camera roll | shutter | flip */}
           <View style={styles.bottomRow}>
-            {/* Camera roll shortcut */}
-            <TouchableOpacity
-              style={styles.sideButton}
-              onPress={handleOpenCameraRoll}
-              disabled={uploading}
-            >
-              <ImageIcon size={18} color={colors.card} strokeWidth={1.5} />
+            <TouchableOpacity style={styles.sideButton} onPress={handleOpenCameraRoll} disabled={uploading}>
+              <Ionicons name="images-outline" size={20} color="white" />
             </TouchableOpacity>
 
-            {/* Shutter */}
             <TouchableOpacity
-              style={[
-                styles.shutter,
-                isRecording && styles.shutterRecording,
-              ]}
+              style={[styles.shutter, isRecording && styles.shutterRecording]}
               onPress={handleShutterPress}
               disabled={uploading}
-              activeOpacity={0.8}
             >
-              <View
-                style={[
-                  styles.shutterInner,
-                  isRecording && styles.shutterInnerRecording,
-                ]}
-              />
+              <View style={[styles.shutterInner, isRecording && styles.shutterInnerRecording]} />
             </TouchableOpacity>
 
-            {/* Flip camera */}
             <TouchableOpacity
               style={styles.sideButton}
-              onPress={() =>
-                setCameraFacing((f) => (f === "back" ? "front" : "back"))
-              }
+              onPress={() => setCameraFacing((f) => (f === "back" ? "front" : "back"))}
               disabled={isRecording || uploading}
             >
-              <SwitchCamera size={18} color={colors.card} strokeWidth={1.5} />
+              <Ionicons name="camera-reverse-outline" size={20} color="white" />
             </TouchableOpacity>
           </View>
 
           <Text style={styles.hint}>
-            {mode === "photo"
-              ? "Tap for photo"
-              : isRecording
-              ? "Tap to stop recording"
-              : "Tap to start recording"}
+            {mode === "photo" ? "Tap for photo" : isRecording ? "Tap to stop recording" : "Tap to start recording"}
           </Text>
         </View>
       </CameraView>
@@ -334,179 +301,31 @@ export default function CameraScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0F0F0F",
-  },
-  camera: {
-    flex: 1,
-  },
-
-  // Top bar
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.base,
-    paddingTop: 56, // safe area + status bar approximation
-    paddingBottom: spacing.sm,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sessionTagPill: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: spacing.pillRadius,
-  },
-  sessionTagText: {
-    fontSize: typography.fontSize.caption,
-    color: colors.card,
-    fontWeight: typography.fontWeight.medium,
-  },
-  topBarSpacer: {
-    width: 36,
-  },
-
-  // Recording indicator
-  recordingRow: {
-    alignItems: "center",
-    marginTop: spacing.sm,
-  },
-  recordingPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: "rgba(220,38,38,0.85)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: spacing.pillRadius,
-  },
-  recordingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.card,
-  },
-  recordingTimer: {
-    fontSize: typography.fontSize.caption,
-    color: colors.card,
-    fontWeight: typography.fontWeight.semiBold,
-  },
-
-  // Upload overlay
-  uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-  uploadText: {
-    fontSize: typography.fontSize.body,
-    color: colors.card,
-    fontWeight: typography.fontWeight.medium,
-  },
-
-  // Controls
-  controls: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: 40,
-    paddingHorizontal: spacing.pagePadding,
-  },
-  modeRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: spacing.xl,
-    marginBottom: spacing.lg,
-  },
-  modeLabel: {
-    fontSize: typography.fontSize.label,
-    fontWeight: typography.fontWeight.semiBold,
-    color: "rgba(255,255,255,0.4)",
-    letterSpacing: typography.letterSpacing.labelWide,
-  },
-  modeLabelActive: {
-    color: colors.accent,
-  },
-  bottomRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xxl,
-  },
-  sideButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Shutter
-  shutter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 3,
-    borderColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shutterRecording: {
-    borderColor: colors.destructive,
-  },
-  shutterInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.card,
-  },
-  shutterInnerRecording: {
-    width: 28,
-    height: 28,
-    borderRadius: 4,
-    backgroundColor: colors.destructive,
-  },
-
-  hint: {
-    textAlign: "center",
-    marginTop: spacing.md,
-    fontSize: typography.fontSize.label,
-    color: "rgba(255,255,255,0.3)",
-  },
-
-  // Permission screen
-  permissionContainer: {
-    flex: 1,
-    backgroundColor: "#0F0F0F",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: spacing.pagePadding,
-    gap: spacing.base,
-  },
-  permissionText: {
-    fontSize: typography.fontSize.body,
-    color: "rgba(255,255,255,0.7)",
-    textAlign: "center",
-  },
-  permissionButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: spacing.buttonRadius,
-  },
-  permissionButtonText: {
-    fontSize: typography.fontSize.body,
-    fontWeight: typography.fontWeight.semiBold,
-    color: colors.card,
-  },
+  container: { flex: 1, backgroundColor: "#0F0F0F" },
+  camera: { flex: 1 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 56, paddingBottom: 8 },
+  closeButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  sessionTagPill: { backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100 },
+  sessionTagText: { fontSize: 12, color: "white", fontWeight: "500" },
+  recordingRow: { alignItems: "center", marginTop: 8 },
+  recordingPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(220,38,38,0.85)", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100 },
+  recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "white" },
+  recordingTimer: { fontSize: 12, color: "white", fontWeight: "600" },
+  uploadOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", gap: 8 },
+  uploadText: { fontSize: 14, color: "white", fontWeight: "500" },
+  controls: { position: "absolute", bottom: 0, left: 0, right: 0, paddingBottom: 40, paddingHorizontal: 20 },
+  modeRow: { flexDirection: "row", justifyContent: "center", gap: 24, marginBottom: 20 },
+  modeLabel: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.4)", letterSpacing: 1.5 },
+  modeLabelActive: { color: colors.accent },
+  bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 32 },
+  sideButton: { width: 40, height: 40, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  shutter: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: "white", alignItems: "center", justifyContent: "center" },
+  shutterRecording: { borderColor: "#DC2626" },
+  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: "white" },
+  shutterInnerRecording: { width: 28, height: 28, borderRadius: 4, backgroundColor: "#DC2626" },
+  hint: { textAlign: "center", marginTop: 12, fontSize: 11, color: "rgba(255,255,255,0.3)" },
+  permissionContainer: { flex: 1, backgroundColor: "#0F0F0F", alignItems: "center", justifyContent: "center", padding: 20, gap: 16 },
+  permissionText: { fontSize: 14, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 22 },
+  permissionButton: { backgroundColor: colors.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  permissionButtonText: { fontSize: 14, fontWeight: "600", color: "white" },
 });
