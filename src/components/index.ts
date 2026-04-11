@@ -32,3 +32,6 @@ export type { CommentThreadProps } from "./CommentThread";
 
 export { CommentInput } from "./CommentInput";
 export type { CommentInputProps } from "./CommentInput";
+
+export { VideoPlayerModal } from "./VideoPlayerModal";
+export type { VideoPlayerModalProps } from "./VideoPlayerModal";

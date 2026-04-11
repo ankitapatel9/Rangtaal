@@ -15,8 +15,6 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
@@ -43,6 +41,7 @@ import {
   CommentThread,
   CommentInput,
   CaptureButton,
+  VideoPlayerModal,
 } from "../../src/components";
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
@@ -52,16 +51,6 @@ import { MediaDoc } from "../../src/types/media";
 import { ClassDoc } from "../../src/types/class";
 
 // ─── Safe lazy-loaded native deps ─────────────────────────────────────────────
-
-let VideoComponent: any = null;
-let ResizeModeEnum: any = null;
-try {
-  VideoComponent = require("expo-av").Video;
-  ResizeModeEnum = require("expo-av").ResizeMode;
-} catch {}
-
-// Keep legacy aliases for existing usages
-const ResizeMode = ResizeModeEnum;
 
 let storage: any = null;
 try { storage = require("@react-native-firebase/storage").default; } catch {}
@@ -351,111 +340,8 @@ function AdminCancelSection({
   );
 }
 
-// ─── VideoPlayerModal ─────────────────────────────────────────────────────────
-
-interface VideoPlayerModalProps {
-  visible: boolean;
-  videoUrl: string;
-  title: string;
-  tutorialId: string;
-  userId: string;
-  onClose: () => void;
-}
-
-function VideoPlayerModal({
-  visible,
-  videoUrl,
-  title,
-  tutorialId,
-  userId,
-  onClose,
-}: VideoPlayerModalProps) {
-  const { comments } = useComments(tutorialId);
-  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | undefined>(undefined);
-  const userDoc = useUser(userId).user;
-  const userName = userDoc?.name ?? "You";
-
-  return (
-    <Modal
-      visible={visible}
-      transparent={false}
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <KeyboardAvoidingView
-        style={styles.videoModalContainer}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        {/* Close button */}
-        <SafeAreaView style={styles.videoModalSafeArea}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.videoModalCloseBtn}
-            accessibilityLabel="Close video"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="close" size={28} color={colors.card} />
-          </TouchableOpacity>
-        </SafeAreaView>
-
-        {/* Video */}
-        {VideoComponent ? (
-          <VideoComponent
-            source={{ uri: videoUrl }}
-            useNativeControls
-            resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
-            shouldPlay
-            style={styles.videoModalPlayer}
-          />
-        ) : (
-          <View style={styles.videoModalUnavailable}>
-            <Text style={styles.videoModalUnavailableText}>
-              Video playback requires a new app build
-            </Text>
-          </View>
-        )}
-
-        {/* Title + engagement */}
-        <View style={styles.videoModalMeta}>
-          <Text style={styles.videoModalTitle} numberOfLines={2}>{title}</Text>
-          <View style={styles.videoModalEngagement}>
-            <EngagementBar
-              parentId={tutorialId}
-              parentType="tutorial"
-              userId={userId}
-              commentCount={comments.length}
-              variant="dark"
-            />
-          </View>
-        </View>
-
-        {/* Comments */}
-        <ScrollView
-          style={styles.videoModalComments}
-          keyboardShouldPersistTaps="handled"
-        >
-          {comments.map((c) => (
-            <CommentThread
-              key={c.id}
-              comment={c}
-              userId={userId}
-              onReply={(id, name) => setReplyTo({ id, name })}
-            />
-          ))}
-          <CommentInput
-            parentId={tutorialId}
-            parentType="tutorial"
-            userId={userId}
-            userName={userName}
-            replyTo={replyTo}
-            onSend={() => setReplyTo(undefined)}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-}
+// ─── VideoPlayerModal is now the shared src/components/VideoPlayerModal ──────
+// (imported above from ../../src/components)
 
 // ─── Section 4: Tutorial card ─────────────────────────────────────────────────
 
@@ -581,15 +467,18 @@ function TutorialCard({
         </View>
       )}
 
-      {/* Full-screen video player modal */}
+      {/* Full-screen Reels-style video player modal */}
       {videoOpen && (
         <VideoPlayerModal
           visible={videoOpen}
+          onClose={() => setVideoOpen(false)}
           videoUrl={tutorial.videoUrl}
           title={tutorial.title}
-          tutorialId={tutorial.id}
+          uploaderName=""
+          parentId={tutorial.id}
+          parentType="tutorial"
           userId={userId}
-          onClose={() => setVideoOpen(false)}
+          userName={userName}
         />
       )}
     </View>
@@ -740,24 +629,13 @@ function GalleryCell({
   );
 }
 
-interface MediaPreviewModalProps {
+// PhotoPreviewModal — simple full-screen photo viewer (videos use VideoPlayerModal)
+interface PhotoPreviewModalProps {
   item: MediaDoc | null;
-  userId: string;
-  userName: string;
   onClose: () => void;
 }
 
-function MediaPreviewModal({
-  item,
-  userId,
-  userName,
-  onClose,
-}: MediaPreviewModalProps) {
-  const [replyTo, setReplyTo] = useState<
-    { id: string; name: string } | undefined
-  >(undefined);
-  const { comments } = useComments(item?.id ?? "");
-
+function PhotoPreviewModal({ item, onClose }: PhotoPreviewModalProps) {
   if (!item) return null;
 
   return (
@@ -768,7 +646,6 @@ function MediaPreviewModal({
       onRequestClose={onClose}
     >
       <View style={styles.previewOverlay}>
-        {/* Close button */}
         <TouchableOpacity
           style={styles.previewClose}
           onPress={onClose}
@@ -776,55 +653,11 @@ function MediaPreviewModal({
         >
           <Ionicons name="close" size={28} color={colors.card} />
         </TouchableOpacity>
-
-        {/* Media content */}
-        {item.type === "photo" ? (
-          <Image
-            source={{ uri: item.storageUrl }}
-            style={styles.previewImage}
-            resizeMode="contain"
-          />
-        ) : VideoComponent ? (
-          <VideoComponent
-            source={{ uri: item.storageUrl }}
-            useNativeControls
-            resizeMode={ResizeMode?.CONTAIN ?? "contain"}
-            shouldPlay
-            style={styles.previewVideo}
-          />
-        ) : (
-          <Text style={styles.videoUnavailable}>Video requires app update</Text>
-        )}
-
-        {/* Engagement + comments below media */}
-        <View style={styles.previewEngagement}>
-          <EngagementBar
-            parentId={item.id}
-            parentType="media"
-            userId={userId}
-            commentCount={comments.length}
-            variant="dark"
-          />
-        </View>
-
-        <ScrollView style={styles.previewComments} keyboardShouldPersistTaps="handled">
-          {comments.map((c) => (
-            <CommentThread
-              key={c.id}
-              comment={c}
-              userId={userId}
-              onReply={(id, name) => setReplyTo({ id, name })}
-            />
-          ))}
-          <CommentInput
-            parentId={item.id}
-            parentType="media"
-            userId={userId}
-            userName={userName}
-            replyTo={replyTo}
-            onSend={() => setReplyTo(undefined)}
-          />
-        </ScrollView>
+        <Image
+          source={{ uri: item.storageUrl }}
+          style={styles.previewImage}
+          resizeMode="contain"
+        />
       </View>
     </Modal>
   );
@@ -947,13 +780,26 @@ function GallerySection({
         </View>
       )}
 
-      {/* Full-screen media preview modal */}
-      {selectedItem && (
-        <MediaPreviewModal
+      {/* Photos: simple full-screen viewer */}
+      {selectedItem && selectedItem.type === "photo" && (
+        <PhotoPreviewModal
           item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
+
+      {/* Videos: Reels-style player */}
+      {selectedItem && selectedItem.type === "video" && (
+        <VideoPlayerModal
+          visible
+          onClose={() => setSelectedItem(null)}
+          videoUrl={selectedItem.storageUrl}
+          title=""
+          uploaderName=""
+          parentId={selectedItem.id}
+          parentType="media"
           userId={userId}
           userName={userName}
-          onClose={() => setSelectedItem(null)}
         />
       )}
 

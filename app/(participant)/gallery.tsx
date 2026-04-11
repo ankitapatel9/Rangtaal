@@ -15,7 +15,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useGalleryFeed, GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
@@ -25,6 +24,7 @@ import { useLikes } from "../../src/hooks/useLikes";
 import { useComments } from "../../src/hooks/useComments";
 import { CommentThread } from "../../src/components/CommentThread";
 import { CommentInput } from "../../src/components/CommentInput";
+import { VideoPlayerModal } from "../../src/components/VideoPlayerModal";
 import { colors } from "../../src/theme/colors";
 // GalleryFeedItem used instead of MediaDoc
 
@@ -236,24 +236,23 @@ interface FeedPostProps {
   userId: string;
   userName: string;
   isLast: boolean;
+  onVideoPress?: (item: GalleryFeedItem) => void;
 }
 
+import { formatTimeAgo as formatTime, toEpochMs } from "../../src/lib/formatTime";
+
 function formatSessionDate(uploadedAt: number): string {
-  const d = new Date(uploadedAt);
+  const ms = toEpochMs(uploadedAt);
+  if (ms === 0) return "Session";
+  const d = new Date(ms);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " session";
 }
 
 function formatTimeAgo(uploadedAt: number): string {
-  const diffMs = Date.now() - uploadedAt;
-  const diffMins = Math.floor(diffMs / 60_000);
-  if (diffMins < 60) return `${diffMins} MINUTE${diffMins !== 1 ? "S" : ""} AGO`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} HOUR${diffHours !== 1 ? "S" : ""} AGO`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} DAY${diffDays !== 1 ? "S" : ""} AGO`;
+  return formatTime(uploadedAt).toUpperCase();
 }
 
-function FeedPost({ item, userId, userName, isLast }: FeedPostProps) {
+function FeedPost({ item, userId, userName, isLast, onVideoPress }: FeedPostProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   // Derive a display name from uploadedBy uid (use first 6 chars as placeholder)
@@ -284,20 +283,23 @@ function FeedPost({ item, userId, userName, isLast }: FeedPostProps) {
           resizeMode="cover"
         />
       ) : (
-        <View style={styles.videoContainer}>
-          <Video
+        <TouchableOpacity
+          style={styles.videoContainer}
+          activeOpacity={0.85}
+          onPress={() => onVideoPress?.(item)}
+          accessibilityLabel={`Play video${item.title ? `: ${item.title}` : ""}`}
+        >
+          <Image
             source={{ uri: item.storageUrl }}
             style={styles.media}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={false}
-            isMuted
+            resizeMode="cover"
           />
           <View style={styles.playOverlay}>
             <View style={styles.playCircle}>
               <Ionicons name="play" size={28} color={colors.card} />
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* Tutorial title if applicable */}
@@ -341,6 +343,7 @@ export default function GalleryScreen() {
   const { user: userDoc } = useUser(authUser?.uid);
   const { items: media, loading } = useGalleryFeed();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [activeVideo, setActiveVideo] = useState<GalleryFeedItem | null>(null);
 
   const userId = authUser?.uid ?? "";
   const displayName = userDoc?.name ?? "Me";
@@ -352,6 +355,10 @@ export default function GalleryScreen() {
     return true;
   });
 
+  const handleVideoPress = useCallback((item: GalleryFeedItem) => {
+    setActiveVideo(item);
+  }, []);
+
   const renderItem = useCallback(
     ({ item, index }: { item: GalleryFeedItem; index: number }) => (
       <FeedPost
@@ -359,9 +366,10 @@ export default function GalleryScreen() {
         userId={userId}
         userName={displayName}
         isLast={index === filteredMedia.length - 1}
+        onVideoPress={handleVideoPress}
       />
     ),
-    [userId, displayName, filteredMedia.length]
+    [userId, displayName, filteredMedia.length, handleVideoPress]
   );
 
   const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
@@ -429,6 +437,21 @@ export default function GalleryScreen() {
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.feedContent}
+        />
+      )}
+
+      {/* Reels-style video player modal */}
+      {activeVideo && activeVideo.type === "video" && (
+        <VideoPlayerModal
+          visible
+          onClose={() => setActiveVideo(null)}
+          videoUrl={activeVideo.storageUrl}
+          title={activeVideo.title ?? ""}
+          uploaderName=""
+          parentId={activeVideo.id}
+          parentType={activeVideo.source === "tutorial" ? "tutorial" : "media"}
+          userId={userId}
+          userName={displayName}
         />
       )}
     </SafeAreaView>
