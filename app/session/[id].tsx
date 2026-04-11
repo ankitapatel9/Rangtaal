@@ -15,6 +15,8 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
@@ -381,7 +383,10 @@ function VideoPlayerModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.videoModalContainer}>
+      <KeyboardAvoidingView
+        style={styles.videoModalContainer}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         {/* Close button */}
         <SafeAreaView style={styles.videoModalSafeArea}>
           <TouchableOpacity
@@ -447,7 +452,7 @@ function VideoPlayerModal({
             onSend={() => setReplyTo(undefined)}
           />
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
