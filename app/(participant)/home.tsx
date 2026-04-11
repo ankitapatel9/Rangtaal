@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
+import { useGalleryFeed } from "../../src/hooks/useGalleryFeed";
+import { useAllUsers } from "../../src/hooks/useAllUsers";
 import {
   Avatar,
   AvatarStack,
@@ -26,6 +28,7 @@ import { typography } from "../../src/theme/typography";
 import { spacing } from "../../src/theme/spacing";
 import { SessionDoc } from "../../src/types/session";
 import { ClassDoc } from "../../src/types/class";
+import { formatTimeAgo } from "../../src/lib/formatTime";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -161,10 +164,18 @@ export default function ParticipantHome() {
   const { user: userDoc } = useUser(authUser?.uid);
   const { class_ } = useActiveClass();
   const { sessions } = useSessions(class_?.id);
+  const { items: feedItems } = useGalleryFeed();
+  const { users } = useAllUsers();
 
   const nextSession = getNextSession(sessions);
   const userName = userDoc?.name ?? "You";
   const userId = authUser?.uid ?? "";
+
+  const userNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    users.forEach((u) => { map[u.uid] = u.name; });
+    return map;
+  }, [users]);
 
   function navigateToSession(id: string) {
     router.push(`/session/${id}` as Parameters<typeof router.push>[0]);
@@ -210,31 +221,27 @@ export default function ParticipantHome() {
           style={styles.sectionHeader}
         />
 
-        {/* Static MVP feed — dynamic timeline is a future enhancement */}
-        <FeedItem
-          authorName="Priya S."
-          action="posted a tutorial"
-          meta="Garba Circle · 3 days ago"
-          preview="Week 4 footwork breakdown — slow version with counts"
-        />
-        <FeedItem
-          authorName="Rahul M."
-          action="added photos"
-          meta="Apr 1 session · 2 days ago"
-          preview="12 new photos from the last session"
-        />
-        <FeedItem
-          authorName="Asha K."
-          action="in chat"
-          meta="2 hours ago"
-          preview="Anyone know if we're doing the Dandiya routine this Tuesday?"
-        />
-        <FeedItem
-          authorName="Priya S."
-          action="posted a tutorial"
-          meta="Garba Circle · 1 week ago"
-          preview="Week 3 — partner sync and circle timing"
-        />
+        {feedItems.length === 0 ? (
+          <Card style={styles.feedCard}>
+            <Text style={styles.feedPreview}>No recent activity.</Text>
+          </Card>
+        ) : (
+          feedItems.slice(0, 5).map((item) => (
+            <FeedItem
+              key={item.id}
+              authorName={userNameMap[item.uploadedBy] ?? "Someone"}
+              action={
+                item.source === "tutorial"
+                  ? "posted a tutorial"
+                  : item.type === "photo"
+                  ? "added a photo"
+                  : "added a video"
+              }
+              meta={formatTimeAgo(item.uploadedAt)}
+              preview={item.title ?? ""}
+            />
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );

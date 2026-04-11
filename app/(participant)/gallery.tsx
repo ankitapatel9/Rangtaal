@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { useGalleryFeed, GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
+import { useAllUsers } from "../../src/hooks/useAllUsers";
 import { useLikes } from "../../src/hooks/useLikes";
 import { useComments } from "../../src/hooks/useComments";
 import { CommentThread } from "../../src/components/CommentThread";
@@ -235,6 +236,7 @@ interface FeedPostProps {
   item: GalleryFeedItem;
   userId: string;
   userName: string;
+  userNameMap: Record<string, string>;
   isLast: boolean;
   onVideoPress?: (item: GalleryFeedItem) => void;
 }
@@ -252,13 +254,10 @@ function formatTimeAgo(uploadedAt: number): string {
   return formatTime(uploadedAt).toUpperCase();
 }
 
-function FeedPost({ item, userId, userName, isLast, onVideoPress }: FeedPostProps) {
+function FeedPost({ item, userId, userName, userNameMap, isLast, onVideoPress }: FeedPostProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
-  // Derive a display name from uploadedBy uid (use first 6 chars as placeholder)
-  const uploaderLabel = item.uploadedBy.length > 0
-    ? `User ${item.uploadedBy.slice(0, 6)}`
-    : "Unknown";
+  const uploaderLabel = userNameMap[item.uploadedBy] ?? "Unknown";
 
   return (
     <View style={[styles.post, isLast && styles.postLast]}>
@@ -287,17 +286,14 @@ function FeedPost({ item, userId, userName, isLast, onVideoPress }: FeedPostProp
           style={styles.videoContainer}
           activeOpacity={0.85}
           onPress={() => onVideoPress?.(item)}
-          accessibilityLabel={`Play video${item.title ? `: ${item.title}` : ""}`}
         >
-          <Image
-            source={{ uri: item.storageUrl }}
-            style={styles.media}
-            resizeMode="cover"
-          />
-          <View style={styles.playOverlay}>
+          <View style={[styles.media, styles.videoPlaceholder]}>
             <View style={styles.playCircle}>
-              <Ionicons name="play" size={28} color={colors.card} />
+              <Ionicons name="play" size={32} color="white" />
             </View>
+            {item.title ? (
+              <Text style={styles.videoPlaceholderTitle}>{item.title}</Text>
+            ) : null}
           </View>
         </TouchableOpacity>
       )}
@@ -342,11 +338,18 @@ export default function GalleryScreen() {
   const { user: authUser } = useAuth();
   const { user: userDoc } = useUser(authUser?.uid);
   const { items: media, loading } = useGalleryFeed();
+  const { users } = useAllUsers();
   const [filter, setFilter] = useState<FilterType>("all");
   const [activeVideo, setActiveVideo] = useState<GalleryFeedItem | null>(null);
 
   const userId = authUser?.uid ?? "";
   const displayName = userDoc?.name ?? "Me";
+
+  const userNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    users.forEach((u) => { map[u.uid] = u.name; });
+    return map;
+  }, [users]);
 
   const filteredMedia = media.filter((m) => {
     if (filter === "all") return true;
@@ -365,11 +368,12 @@ export default function GalleryScreen() {
         item={item}
         userId={userId}
         userName={displayName}
+        userNameMap={userNameMap}
         isLast={index === filteredMedia.length - 1}
         onVideoPress={handleVideoPress}
       />
     ),
-    [userId, displayName, filteredMedia.length, handleVideoPress]
+    [userId, displayName, userNameMap, filteredMedia.length, handleVideoPress]
   );
 
   const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
@@ -592,11 +596,16 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_WIDTH,
   },
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  videoPlaceholder: {
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  videoPlaceholderTitle: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    fontWeight: "500",
+    marginTop: 12,
   },
   playCircle: {
     width: 60,
