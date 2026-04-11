@@ -10,6 +10,8 @@ import {
 import { useRouter } from "expo-router";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
+import { useAuth } from "../../src/hooks/useAuth";
+import { createClassAndSeason } from "../../src/lib/classes";
 import {
   SegmentedControl,
   SectionHeader,
@@ -304,6 +306,43 @@ function ListView({ sessions, onSelectSession }: ListViewProps) {
 // ─── No class seed prompt ────────────────────────────────────────────────────
 
 function NoClassPrompt() {
+  const { user: authUser } = useAuth();
+  const [seeding, setSeeding] = useState(false);
+
+  async function handleSeed() {
+    if (!authUser) return;
+    Alert.alert(
+      "Create the 2026 season?",
+      "This creates the Garba Workshops class and one session per Tuesday from April 21 through September 29, 2026.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Create",
+          onPress: async () => {
+            setSeeding(true);
+            try {
+              await createClassAndSeason({
+                name: "Garba Workshops 2026",
+                location: "Roselle Park District, Maple Room",
+                address: "555 W Bryn Mawr Ave, Roselle, IL 60172",
+                startTime: "19:30",
+                endTime: "21:30",
+                monthlyFee: 60,
+                seasonStart: "2026-04-21T19:30:00-05:00",
+                seasonEnd: "2026-09-29T19:30:00-05:00",
+                adminUserId: authUser.uid,
+              });
+            } catch (err: any) {
+              Alert.alert("Error", err?.message ?? "Could not create season.");
+            } finally {
+              setSeeding(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <Card style={styles.noClassCard}>
       <Text style={styles.noClassTitle}>No class yet</Text>
@@ -311,8 +350,9 @@ function NoClassPrompt() {
         Create your first Rangtaal class to start scheduling sessions.
       </Text>
       <GoldButton
-        label="Create Class"
-        onPress={() => { /* Phase 2 implementation */ }}
+        label={seeding ? "Creating..." : "Create 2026 Season"}
+        onPress={handleSeed}
+        loading={seeding}
         style={styles.noClassButton}
         variant="plum"
       />
