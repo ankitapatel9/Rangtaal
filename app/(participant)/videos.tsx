@@ -8,17 +8,40 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Video, ResizeMode } from "expo-av";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
 import { useTutorials } from "../../src/hooks/useTutorials";
+import { useComments } from "../../src/hooks/useComments";
+import { LikeButton } from "../../src/components/LikeButton";
+import { EngagementBar } from "../../src/components/EngagementBar";
 import type { TutorialDoc } from "../../src/types/tutorial";
 import { colors } from "../../src/theme/colors";
 
-function TutorialRow({ tutorial, paid }: { tutorial: TutorialDoc; paid: boolean }) {
+// ─── Safe lazy-loaded native deps ─────────────────────────────────────────────
+
+let VideoComponent: any = null;
+let ResizeMode: any = null;
+try {
+  const av = require("expo-av");
+  VideoComponent = av.Video;
+  ResizeMode = av.ResizeMode;
+} catch {}
+
+// ─── Tutorial row ─────────────────────────────────────────────────────────────
+
+function TutorialRow({
+  tutorial,
+  paid,
+  userId,
+}: {
+  tutorial: TutorialDoc;
+  paid: boolean;
+  userId: string;
+}) {
   const [playing, setPlaying] = useState(false);
+  const { comments } = useComments(tutorial.id);
 
   function handlePress() {
     if (!paid) {
@@ -42,20 +65,44 @@ function TutorialRow({ tutorial, paid }: { tutorial: TutorialDoc; paid: boolean 
           {!paid && <Text style={styles.paywallHint}>Contact admin to unlock</Text>}
         </View>
       </TouchableOpacity>
-      {playing && paid && (
-        <Video
+
+      {/* Engagement bar — only for paid users */}
+      {paid && (
+        <View style={styles.engagementWrapper}>
+          <EngagementBar
+            parentId={tutorial.id}
+            parentType="media"
+            userId={userId}
+            commentCount={comments.length}
+          />
+        </View>
+      )}
+
+      {/* Video player — only shown when playing */}
+      {playing && paid && VideoComponent ? (
+        <VideoComponent
           source={{ uri: tutorial.videoUrl }}
           style={styles.videoPlayer}
           useNativeControls
-          resizeMode={ResizeMode.CONTAIN}
+          resizeMode={ResizeMode?.CONTAIN ?? "contain"}
           shouldPlay
         />
-      )}
+      ) : null}
     </View>
   );
 }
 
-function SessionSection({ sessionId, dateLabel, paid }: { sessionId: string; dateLabel: string; paid: boolean }) {
+function SessionSection({
+  sessionId,
+  dateLabel,
+  paid,
+  userId,
+}: {
+  sessionId: string;
+  dateLabel: string;
+  paid: boolean;
+  userId: string;
+}) {
   const { tutorials, loading } = useTutorials(sessionId);
 
   if (loading) {
@@ -67,7 +114,7 @@ function SessionSection({ sessionId, dateLabel, paid }: { sessionId: string; dat
     <View style={styles.section}>
       <Text style={styles.sectionHeader}>{dateLabel}</Text>
       {tutorials.map((t) => (
-        <TutorialRow key={t.id} tutorial={t} paid={paid} />
+        <TutorialRow key={t.id} tutorial={t} paid={paid} userId={userId} />
       ))}
     </View>
   );
@@ -80,6 +127,7 @@ export default function ParticipantVideos() {
   const { sessions, loading: sessionsLoading } = useSessions(class_?.id);
 
   const isPaid = userDoc?.paid === true;
+  const userId = authUser?.uid ?? "";
   const loading = userLoading || classLoading || sessionsLoading;
 
   if (loading) {
@@ -117,6 +165,7 @@ export default function ParticipantVideos() {
             sessionId={session.id}
             dateLabel={dateLabel}
             paid={isPaid}
+            userId={userId}
           />
         );
       })}
@@ -166,5 +215,9 @@ const styles = StyleSheet.create({
   tutorialTitle: { fontSize: 15, fontWeight: "600", color: colors.primary },
   tutorialDescription: { fontSize: 12, color: colors.textBody, marginTop: 2 },
   paywallHint: { fontSize: 11, color: colors.accent, marginTop: 4, fontWeight: "600" },
+  engagementWrapper: {
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+  },
   videoPlayer: { width: "100%", height: 220 },
 });
