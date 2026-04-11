@@ -52,10 +52,14 @@ import { ClassDoc } from "../../src/types/class";
 // ─── Safe lazy-loaded native deps ─────────────────────────────────────────────
 
 let VideoComponent: any = null;
-try { VideoComponent = require("expo-av").Video; } catch {}
+let ResizeModeEnum: any = null;
+try {
+  VideoComponent = require("expo-av").Video;
+  ResizeModeEnum = require("expo-av").ResizeMode;
+} catch {}
 
-let ResizeMode: any = null;
-try { ResizeMode = require("expo-av").ResizeMode; } catch {}
+// Keep legacy aliases for existing usages
+const ResizeMode = ResizeModeEnum;
 
 let storage: any = null;
 try { storage = require("@react-native-firebase/storage").default; } catch {}
@@ -345,6 +349,109 @@ function AdminCancelSection({
   );
 }
 
+// ─── VideoPlayerModal ─────────────────────────────────────────────────────────
+
+interface VideoPlayerModalProps {
+  visible: boolean;
+  videoUrl: string;
+  title: string;
+  tutorialId: string;
+  userId: string;
+  onClose: () => void;
+}
+
+function VideoPlayerModal({
+  visible,
+  videoUrl,
+  title,
+  tutorialId,
+  userId,
+  onClose,
+}: VideoPlayerModalProps) {
+  const { comments } = useComments(tutorialId);
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | undefined>(undefined);
+  const userDoc = useUser(userId).user;
+  const userName = userDoc?.name ?? "You";
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={false}
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={styles.videoModalContainer}>
+        {/* Close button */}
+        <SafeAreaView style={styles.videoModalSafeArea}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.videoModalCloseBtn}
+            accessibilityLabel="Close video"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={28} color={colors.card} />
+          </TouchableOpacity>
+        </SafeAreaView>
+
+        {/* Video */}
+        {VideoComponent ? (
+          <VideoComponent
+            source={{ uri: videoUrl }}
+            useNativeControls
+            resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
+            shouldPlay
+            style={styles.videoModalPlayer}
+          />
+        ) : (
+          <View style={styles.videoModalUnavailable}>
+            <Text style={styles.videoModalUnavailableText}>
+              Video playback requires a new app build
+            </Text>
+          </View>
+        )}
+
+        {/* Title + engagement */}
+        <View style={styles.videoModalMeta}>
+          <Text style={styles.videoModalTitle} numberOfLines={2}>{title}</Text>
+          <View style={styles.videoModalEngagement}>
+            <EngagementBar
+              parentId={tutorialId}
+              parentType="tutorial"
+              userId={userId}
+              commentCount={comments.length}
+              variant="dark"
+            />
+          </View>
+        </View>
+
+        {/* Comments */}
+        <ScrollView
+          style={styles.videoModalComments}
+          keyboardShouldPersistTaps="handled"
+        >
+          {comments.map((c) => (
+            <CommentThread
+              key={c.id}
+              comment={c}
+              userId={userId}
+              onReply={(id, name) => setReplyTo({ id, name })}
+            />
+          ))}
+          <CommentInput
+            parentId={tutorialId}
+            parentType="tutorial"
+            userId={userId}
+            userName={userName}
+            replyTo={replyTo}
+            onSend={() => setReplyTo(undefined)}
+          />
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Section 4: Tutorial card ─────────────────────────────────────────────────
 
 interface TutorialCardProps {
@@ -360,7 +467,7 @@ function TutorialCard({
   userId,
   userName,
 }: TutorialCardProps) {
-  const [playing, setPlaying] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<
     { id: string; name: string } | undefined
@@ -368,7 +475,7 @@ function TutorialCard({
   const { comments } = useComments(tutorial.id);
   const locked = !userPaid;
 
-  function handlePress() {
+  function handleThumbnailPress() {
     if (locked) {
       Alert.alert(
         "Unlock Required",
@@ -376,102 +483,111 @@ function TutorialCard({
       );
       return;
     }
-    setPlaying((prev) => !prev);
+    setVideoOpen(true);
   }
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
-      <Card style={styles.tutorialCard}>
-        <View style={styles.tutorialAccentLine} />
-        <View style={styles.tutorialRow}>
-          <View
-            style={[
-              styles.tutorialIconCircle,
-              locked && styles.tutorialIconCircleLocked,
-            ]}
-          >
-            <Text style={styles.tutorialIcon}>
-              {locked ? "🔒" : playing ? "■" : "▶"}
-            </Text>
+    <View style={styles.tutorialCard}>
+      {/* 16:9 thumbnail area */}
+      <TouchableOpacity
+        onPress={handleThumbnailPress}
+        activeOpacity={0.8}
+        style={styles.tutorialThumbnailArea}
+        accessibilityLabel={locked ? "Locked tutorial" : `Play ${tutorial.title}`}
+      >
+        {tutorial.thumbnailUrl ? (
+          <Image
+            source={{ uri: tutorial.thumbnailUrl }}
+            style={styles.tutorialThumbnailImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.tutorialThumbnailPlaceholder}>
+            <Ionicons
+              name="play-circle"
+              size={56}
+              color={locked ? colors.secondary : "rgba(255,255,255,0.85)"}
+            />
           </View>
-          <View style={styles.tutorialInfo}>
-            <Text style={styles.tutorialTitle}>{tutorial.title}</Text>
-            {tutorial.description != null && (
-              <Text
-                style={styles.tutorialDesc}
-                numberOfLines={playing ? undefined : 2}
-              >
-                {tutorial.description}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Inline video player for paid users */}
-        {playing && !locked && (
-          <>
-            {VideoComponent ? (
-              <VideoComponent
-                source={{ uri: tutorial.videoUrl }}
-                useNativeControls
-                resizeMode={ResizeMode?.CONTAIN ?? "contain"}
-                shouldPlay
-                style={styles.inlineVideo}
-              />
-            ) : (
-              <Text style={styles.videoUnavailable}>
-                Video requires app update
-              </Text>
-            )}
-          </>
         )}
 
-        {/* Engagement bar below tutorial */}
-        <View style={styles.tutorialEngagement}>
-          <LikeButton
+        {/* Lock badge top-right */}
+        {locked && (
+          <View style={styles.tutorialLockBadge}>
+            <Ionicons name="lock-closed" size={14} color={colors.card} />
+          </View>
+        )}
+
+        {/* Duration badge: reserved for future use when duration is in TutorialDoc */}
+      </TouchableOpacity>
+
+      {/* Title + description area */}
+      <View style={styles.tutorialInfo}>
+        <Text style={styles.tutorialTitle}>{tutorial.title}</Text>
+        {tutorial.description != null && tutorial.description.length > 0 && (
+          <Text style={styles.tutorialDesc} numberOfLines={2}>
+            {tutorial.description}
+          </Text>
+        )}
+      </View>
+
+      {/* Engagement bar below title */}
+      <View style={styles.tutorialEngagement}>
+        <LikeButton
+          parentId={tutorial.id}
+          parentType="tutorial"
+          userId={userId}
+        />
+        <TouchableOpacity
+          onPress={() => setCommentOpen((v) => !v)}
+          style={styles.commentToggle}
+          accessibilityLabel="Toggle comments"
+        >
+          <Ionicons
+            name="chatbubble-outline"
+            size={16}
+            color={colors.textSecondary}
+          />
+          {comments.length > 0 && (
+            <Text style={styles.commentCount}>{comments.length}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Inline comment thread */}
+      {commentOpen && (
+        <View style={styles.tutorialComments}>
+          {comments.map((c) => (
+            <CommentThread
+              key={c.id}
+              comment={c}
+              userId={userId}
+              onReply={(id, name) => setReplyTo({ id, name })}
+            />
+          ))}
+          <CommentInput
             parentId={tutorial.id}
             parentType="tutorial"
             userId={userId}
+            userName={userName}
+            replyTo={replyTo}
+            onSend={() => setReplyTo(undefined)}
           />
-          <TouchableOpacity
-            onPress={() => setCommentOpen((v) => !v)}
-            style={styles.commentToggle}
-            accessibilityLabel="Toggle comments"
-          >
-            <Ionicons
-              name="chatbubble-outline"
-              size={16}
-              color={colors.textSecondary}
-            />
-            {comments.length > 0 && (
-              <Text style={styles.commentCount}>{comments.length}</Text>
-            )}
-          </TouchableOpacity>
         </View>
+      )}
 
-        {/* Inline comment thread */}
-        {commentOpen && (
-          <View style={styles.tutorialComments}>
-            {comments.map((c) => (
-              <CommentThread
-                key={c.id}
-                comment={c}
-                userId={userId}
-                onReply={(id, name) => setReplyTo({ id, name })}
-              />
-            ))}
-            <CommentInput
-              parentId={tutorial.id}
-              parentType="tutorial"
-              userId={userId}
-              userName={userName}
-              replyTo={replyTo}
-              onSend={() => setReplyTo(undefined)}
-            />
-          </View>
-        )}
-      </Card>
-    </TouchableOpacity>
+      {/* Full-screen video player modal */}
+      {videoOpen && (
+        <VideoPlayerModal
+          visible={videoOpen}
+          videoUrl={tutorial.videoUrl}
+          title={tutorial.title}
+          tutorialId={tutorial.id}
+          userId={userId}
+          onClose={() => setVideoOpen(false)}
+        />
+      )}
+    </View>
   );
 }
 
@@ -1233,55 +1349,80 @@ const styles = StyleSheet.create({
   tutorialCard: {
     marginHorizontal: spacing.pagePadding,
     marginBottom: spacing.cardGap,
-    padding: 0,
+    backgroundColor: colors.card,
+    borderRadius: spacing.cardRadiusLg,
     overflow: "hidden",
+    shadowColor: "#2D1B3D",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  tutorialAccentLine: {
-    height: 3,
-    backgroundColor: colors.accent,
-    borderTopLeftRadius: spacing.cardRadius,
-    borderTopRightRadius: spacing.cardRadius,
-  },
-  tutorialRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: spacing.cardPadding,
-    gap: spacing.sm,
-  },
-  tutorialIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  tutorialThumbnailArea: {
+    width: "100%",
+    aspectRatio: 16 / 9,
     backgroundColor: colors.primary,
+    borderTopLeftRadius: spacing.cardRadiusLg,
+    borderTopRightRadius: spacing.cardRadiusLg,
+    overflow: "hidden",
+    position: "relative",
+  },
+  tutorialThumbnailImage: {
+    width: "100%",
+    height: "100%",
+  },
+  tutorialThumbnailPlaceholder: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
+    backgroundColor: colors.primary,
   },
-  tutorialIconCircleLocked: {
-    backgroundColor: colors.border,
+  tutorialLockBadge: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: spacing.tagRadius,
+    padding: 4,
   },
-  tutorialIcon: {
-    fontSize: 14,
+  tutorialDurationBadge: {
+    position: "absolute",
+    bottom: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tutorialDurationText: {
     color: colors.card,
+    fontSize: 11,
+    fontWeight: typography.fontWeight.semiBold,
   },
-  tutorialInfo: { flex: 1 },
+  tutorialInfo: {
+    padding: spacing.cardPadding,
+    paddingBottom: spacing.sm,
+  },
   tutorialTitle: {
-    fontSize: typography.fontSize.body,
+    fontSize: typography.fontSize.cardTitle,
     fontWeight: typography.fontWeight.semiBold,
     color: colors.primary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   tutorialDesc: {
-    fontSize: typography.fontSize.caption,
+    fontSize: 13,
     color: colors.textBody,
-    marginBottom: spacing.xs,
+    lineHeight: 18,
   },
   tutorialEngagement: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.base,
     paddingHorizontal: spacing.cardPadding,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.cardPadding,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   commentToggle: {
     flexDirection: "row",
@@ -1298,16 +1439,68 @@ const styles = StyleSheet.create({
     padding: spacing.cardPadding,
     gap: spacing.md,
   },
-  inlineVideo: {
-    width: "100%",
-    height: 220,
-  },
   videoUnavailable: {
     fontSize: typography.fontSize.caption,
     color: colors.textSecondary,
     textAlign: "center",
     paddingVertical: spacing.base,
     paddingHorizontal: spacing.cardPadding,
+  },
+
+  // VideoPlayerModal
+  videoModalContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  videoModalSafeArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  videoModalCloseBtn: {
+    padding: spacing.base,
+    alignSelf: "flex-start",
+  },
+  videoModalPlayer: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    marginTop: 80,
+    backgroundColor: "#000",
+  },
+  videoModalUnavailable: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    marginTop: 80,
+    backgroundColor: "#111",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.pagePadding,
+  },
+  videoModalUnavailableText: {
+    color: colors.secondary,
+    fontSize: typography.fontSize.body,
+    textAlign: "center",
+  },
+  videoModalMeta: {
+    paddingHorizontal: spacing.pagePadding,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.12)",
+  },
+  videoModalTitle: {
+    fontSize: typography.fontSize.sectionTitle,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.card,
+    marginBottom: spacing.sm,
+  },
+  videoModalEngagement: {},
+  videoModalComments: {
+    flex: 1,
+    paddingHorizontal: spacing.pagePadding,
+    paddingTop: spacing.sm,
   },
   uploadButton: {
     marginHorizontal: spacing.pagePadding,
@@ -1324,7 +1517,7 @@ const styles = StyleSheet.create({
   galleryCell: {
     width: GALLERY_SIZE,
     height: GALLERY_SIZE,
-    borderRadius: spacing.tagRadius,
+    borderRadius: spacing.sm,
     overflow: "hidden",
     backgroundColor: colors.border,
   },
