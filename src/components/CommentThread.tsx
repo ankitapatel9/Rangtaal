@@ -11,21 +11,11 @@ import { Avatar } from "./Avatar";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
 import { spacing, shadows } from "../theme/spacing";
+import { formatTimeAgo } from "../lib/formatTime";
 
 const AVATAR_SIZE = 32;
 const REPLY_AVATAR_SIZE = 24;
 const REPLY_INDENT = 40;
-
-function formatTimestamp(createdAt: number): string {
-  const diff = Date.now() - createdAt;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 interface CommentRowProps {
   comment: CommentDoc;
@@ -58,7 +48,7 @@ function CommentRow({
         <View style={styles.commentHeader}>
           <Text style={styles.userName}>{comment.userName}</Text>
           <Text style={styles.timestamp}>
-            {formatTimestamp(comment.createdAt)}
+            {formatTimeAgo(comment.createdAt)}
           </Text>
         </View>
         <Text style={[styles.commentText, isReply && styles.replyText]}>

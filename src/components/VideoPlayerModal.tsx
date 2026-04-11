@@ -11,7 +11,7 @@
  * - Video keeps playing while comment sheet is open
  */
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
   Platform,
   Dimensions,
   Share,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLikes } from "../hooks/useLikes";
@@ -44,6 +45,38 @@ try {
 // ─── Dimensions ───────────────────────────────────────────────────────────────
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// ─── Video with loading spinner ──────────────────────────────────────────────
+
+function VideoWithLoading({ videoUrl }: { videoUrl: string }) {
+  const [buffering, setBuffering] = useState(true);
+
+  const onPlaybackStatusUpdate = useCallback((status: any) => {
+    if (status.isLoaded) {
+      setBuffering(status.isBuffering ?? false);
+    }
+  }, []);
+
+  return (
+    <View style={styles.videoContainer}>
+      {buffering && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.loadingText}>Loading video...</Text>
+        </View>
+      )}
+      <VideoComponent
+        source={{ uri: videoUrl }}
+        useNativeControls
+        resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
+        shouldPlay
+        style={styles.video}
+        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+        onLoad={() => setBuffering(false)}
+      />
+    </View>
+  );
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -253,13 +286,7 @@ export function VideoPlayerModal({
         {/* ── Video ─────────────────────────────────────────────────────────── */}
         <View style={styles.videoWrapper}>
           {VideoComponent ? (
-            <VideoComponent
-              source={{ uri: videoUrl }}
-              useNativeControls
-              resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
-              shouldPlay
-              style={styles.video}
-            />
+            <VideoWithLoading videoUrl={videoUrl} />
           ) : (
             <View style={styles.unavailable}>
               <Ionicons name="videocam-off-outline" size={48} color="rgba(255,255,255,0.5)" />
@@ -367,6 +394,23 @@ const styles = StyleSheet.create({
   video: {
     width: "100%",
     height: "100%",
+  },
+  videoContainer: {
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    zIndex: 10,
+  },
+  loadingText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    marginTop: 8,
   },
 
   // Unavailable fallback
