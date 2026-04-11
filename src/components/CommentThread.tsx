@@ -4,92 +4,77 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image
 } from "react-native";
 import { ThreadedComment } from "../hooks/useComments";
 import { CommentDoc } from "../types/comment";
+import { Avatar } from "./Avatar";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
-import { spacing } from "../theme/spacing";
+import { spacing, shadows } from "../theme/spacing";
 
-const AVATAR_SIZE = 28;
-const REPLY_AVATAR_SIZE = 20;
-const REPLY_INDENT = 34;
+const AVATAR_SIZE = 32;
+const REPLY_AVATAR_SIZE = 24;
+const REPLY_INDENT = 40;
 
 function formatTimestamp(createdAt: number): string {
   const diff = Date.now() - createdAt;
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
+  if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
+  if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
-  return `${days}d`;
-}
-
-interface AvatarProps {
-  name: string;
-  size: number;
-}
-
-function Avatar({ name, size }: AvatarProps) {
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  return (
-    <View
-      style={[
-        styles.avatar,
-        { width: size, height: size, borderRadius: size / 2 }
-      ]}
-      accessibilityLabel={`Avatar for ${name}`}
-    >
-      <Text style={[styles.avatarText, { fontSize: size * 0.38 }]}>
-        {initials}
-      </Text>
-    </View>
-  );
+  return `${days}d ago`;
 }
 
 interface CommentRowProps {
   comment: CommentDoc;
   avatarSize: number;
   userId: string;
+  isReply?: boolean;
   onReply?: (commentId: string, name: string) => void;
 }
 
-function CommentRow({ comment, avatarSize, userId, onReply }: CommentRowProps) {
-  const likeCount = 0; // Placeholder — likes on comments are tracked via useLikes hook at the container level
-
+function CommentRow({
+  comment,
+  avatarSize,
+  userId,
+  isReply = false,
+  onReply,
+}: CommentRowProps) {
   return (
-    <View style={styles.commentRow}>
-      <Avatar name={comment.userName} size={avatarSize} />
+    <View
+      style={[
+        styles.commentCard,
+        isReply ? styles.replyCard : styles.topLevelCard,
+      ]}
+    >
+      <Avatar
+        name={comment.userName}
+        size={avatarSize}
+        variant={isReply ? "gold" : "plum"}
+      />
       <View style={styles.commentContent}>
         <View style={styles.commentHeader}>
           <Text style={styles.userName}>{comment.userName}</Text>
-          <Text style={styles.timestamp}>{formatTimestamp(comment.createdAt)}</Text>
+          <Text style={styles.timestamp}>
+            {formatTimestamp(comment.createdAt)}
+          </Text>
         </View>
-        <Text style={styles.commentText}>{comment.text}</Text>
+        <Text style={[styles.commentText, isReply && styles.replyText]}>
+          {comment.text}
+        </Text>
         <View style={styles.commentActions}>
           {onReply && (
             <TouchableOpacity
               onPress={() => onReply(comment.id, comment.userName)}
+              activeOpacity={0.7}
               accessibilityLabel={`Reply to ${comment.userName}`}
               accessibilityRole="button"
             >
               <Text style={styles.replyLink}>Reply</Text>
             </TouchableOpacity>
           )}
-          <View style={styles.miniLike}>
-            <Text style={styles.heartIcon}>♡</Text>
-            {likeCount > 0 && (
-              <Text style={styles.miniLikeCount}>{likeCount}</Text>
-            )}
-          </View>
         </View>
       </View>
     </View>
@@ -105,7 +90,7 @@ export interface CommentThreadProps {
 export function CommentThread({
   comment,
   userId,
-  onReply
+  onReply,
 }: CommentThreadProps) {
   return (
     <View style={styles.thread}>
@@ -113,6 +98,7 @@ export function CommentThread({
         comment={comment}
         avatarSize={AVATAR_SIZE}
         userId={userId}
+        isReply={false}
         onReply={onReply}
       />
       {comment.replies.map((reply) => (
@@ -121,6 +107,7 @@ export function CommentThread({
             comment={reply}
             avatarSize={REPLY_AVATAR_SIZE}
             userId={userId}
+            isReply
             onReply={undefined}
           />
         </View>
@@ -131,68 +118,62 @@ export function CommentThread({
 
 const styles = StyleSheet.create({
   thread: {
-    gap: spacing.md
+    gap: spacing.sm,
   },
-  commentRow: {
+  commentCard: {
     flexDirection: "row",
-    gap: spacing.sm
+    gap: spacing.sm,
+    borderRadius: 14,
+    padding: 14,
   },
-  avatar: {
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0
+  topLevelCard: {
+    backgroundColor: colors.card,
+    ...shadows.card,
   },
-  avatarText: {
-    color: colors.card,
-    fontWeight: "600"
+  replyCard: {
+    backgroundColor: "#FAF7F2",
+    borderRadius: 12,
+    padding: 10,
+  },
+  replyContainer: {
+    marginLeft: REPLY_INDENT,
   },
   commentContent: {
     flex: 1,
-    gap: spacing.xs
+    gap: spacing.xs,
   },
   commentHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm
+    gap: spacing.sm,
   },
   userName: {
-    ...typography.label,
-    ...typography.bold,
-    color: colors.primary
+    fontSize: 14,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
   },
   timestamp: {
-    ...typography.bodySmall,
-    color: colors.secondary
+    fontSize: 11,
+    color: colors.secondary,
+    lineHeight: 16,
   },
   commentText: {
-    ...typography.body,
-    color: colors.body
+    fontSize: 14,
+    color: colors.body,
+    lineHeight: 20,
+  },
+  replyText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   commentActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md
+    gap: spacing.md,
   },
   replyLink: {
-    ...typography.bodySmall,
+    fontSize: 12,
     color: colors.accent,
-    fontWeight: "600"
+    fontWeight: typography.fontWeight.semiBold,
   },
-  miniLike: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2
-  },
-  heartIcon: {
-    fontSize: 13,
-    color: colors.secondary
-  },
-  miniLikeCount: {
-    ...typography.bodySmall,
-    color: colors.secondary
-  },
-  replyContainer: {
-    marginLeft: REPLY_INDENT
-  }
 });

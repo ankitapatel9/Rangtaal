@@ -5,7 +5,6 @@ import { LikeButton } from "./LikeButton";
 import { LikeDoc } from "../types/like";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
-import { spacing } from "../theme/spacing";
 
 export interface EngagementBarProps {
   parentId: string;
@@ -13,6 +12,7 @@ export interface EngagementBarProps {
   userId: string;
   commentCount: number;
   onCommentPress?: () => void;
+  onSharePress?: () => void;
   variant?: "light" | "dark";
 }
 
@@ -22,6 +22,7 @@ export function EngagementBar({
   userId,
   commentCount,
   onCommentPress,
+  onSharePress,
   variant = "light"
 }: EngagementBarProps) {
   const isDark = variant === "dark";
@@ -35,18 +36,30 @@ export function EngagementBar({
         userId={userId}
         variant={variant}
       />
+
       <TouchableOpacity
         onPress={onCommentPress}
-        style={styles.commentButton}
+        style={styles.iconButton}
+        activeOpacity={0.7}
         accessibilityLabel="Comments"
         accessibilityRole="button"
       >
-        <Ionicons name="chatbubble-outline" size={20} color={iconColor} />
+        <Ionicons name="chatbubble-outline" size={22} color={iconColor} />
         {commentCount > 0 && (
           <Text style={[styles.count, { color: iconColor }]}>
             {commentCount}
           </Text>
         )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={onSharePress}
+        style={styles.iconButton}
+        activeOpacity={0.7}
+        accessibilityLabel="Share"
+        accessibilityRole="button"
+      >
+        <Ionicons name="share-outline" size={22} color={iconColor} />
       </TouchableOpacity>
     </View>
   );
@@ -56,14 +69,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.lg
+    gap: 16,
   },
-  commentButton: {
+  iconButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs
+    gap: 6,
   },
   count: {
-    ...typography.bodySmall
-  }
+    fontSize: 14,
+    fontWeight: typography.fontWeight.semiBold,
+    lineHeight: 18,
+  },
 });

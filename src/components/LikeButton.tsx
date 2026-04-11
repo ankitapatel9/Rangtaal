@@ -1,11 +1,15 @@
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
+import React, { useRef } from "react";
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Animated,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLikes } from "../hooks/useLikes";
 import { LikeDoc } from "../types/like";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
-import { spacing } from "../theme/spacing";
 
 let Haptics: typeof import("expo-haptics") | null = null;
 try { Haptics = require("expo-haptics"); } catch {}
@@ -24,11 +28,28 @@ export function LikeButton({
   variant = "light"
 }: LikeButtonProps) {
   const { count, isLiked, toggle } = useLikes(parentId, userId, parentType);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const isDark = variant === "dark";
   const inactiveColor = isDark ? colors.secondary : colors.body;
 
   async function handlePress() {
+    // Spring-bounce animation on tap
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 1.25,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 10,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 6,
+      }),
+    ]).start();
+
     try {
       if (Haptics) {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -41,14 +62,17 @@ export function LikeButton({
     <TouchableOpacity
       onPress={handlePress}
       style={styles.container}
+      activeOpacity={0.7}
       accessibilityLabel={isLiked ? "Unlike" : "Like"}
       accessibilityRole="button"
     >
-      <Ionicons
-        name={isLiked ? "heart" : "heart-outline"}
-        size={20}
-        color={isLiked ? colors.accent : inactiveColor}
-      />
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Ionicons
+          name={isLiked ? "heart" : "heart-outline"}
+          size={22}
+          color={isLiked ? colors.accent : inactiveColor}
+        />
+      </Animated.View>
       {count > 0 && (
         <Text
           style={[
@@ -67,9 +91,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs
+    gap: 6,
   },
   count: {
-    ...typography.bodySmall
-  }
+    fontSize: 14,
+    fontWeight: typography.fontWeight.semiBold,
+    lineHeight: 18,
+  },
 });

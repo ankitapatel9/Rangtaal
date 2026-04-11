@@ -67,7 +67,7 @@ export function CommentInput({
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder={replyTo ? "Write a reply…" : "Add a comment…"}
+          placeholder="Add a comment..."
           placeholderTextColor={colors.secondary}
           multiline
           returnKeyType="send"
@@ -79,6 +79,7 @@ export function CommentInput({
           onPress={handleSend}
           style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
           disabled={!text.trim() || sending}
+          activeOpacity={0.7}
           accessibilityLabel="Send"
           accessibilityRole="button"
         >
@@ -91,16 +92,17 @@ export function CommentInput({
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: spacing.xs
+    gap: spacing.xs,
   },
   replyingTo: {
-    ...typography.bodySmall,
-    color: colors.secondary,
-    paddingHorizontal: spacing.sm
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: "600" as const,
+    paddingHorizontal: spacing.base,
   },
   replyName: {
     color: colors.accent,
-    fontWeight: "600"
+    fontWeight: "700" as const,
   },
   row: {
     flexDirection: "row",
@@ -109,17 +111,18 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingLeft: spacing.lg,
+    paddingLeft: spacing.base,
     paddingRight: spacing.xs,
-    paddingVertical: spacing.xs,
-    gap: spacing.xs
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
   },
   input: {
     flex: 1,
-    ...typography.body,
+    fontSize: 14,
     color: colors.primary,
     maxHeight: 100,
-    paddingVertical: spacing.xs
+    paddingVertical: 0,
+    lineHeight: 20,
   },
   sendButton: {
     width: 36,
@@ -127,9 +130,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.accent,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
   },
   sendButtonDisabled: {
-    opacity: 0.4
-  }
+    opacity: 0.4,
+  },
 });
