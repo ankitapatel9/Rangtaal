@@ -7,18 +7,24 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Alert,
+  Share,
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAllMedia } from "../../src/hooks/useAllMedia";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
 import { useLikes } from "../../src/hooks/useLikes";
 import { useComments } from "../../src/hooks/useComments";
+import { CommentThread } from "../../src/components/CommentThread";
+import { CommentInput } from "../../src/components/CommentInput";
 import { colors } from "../../src/theme/colors";
 import { MediaDoc } from "../../src/types/media";
 
@@ -27,6 +33,122 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // ─── Filter types ─────────────────────────────────────────────────────────────
 
 type FilterType = "all" | "photo" | "video";
+
+// ─── Comments Modal ───────────────────────────────────────────────────────────
+
+interface CommentsModalProps {
+  mediaId: string;
+  userId: string;
+  userName: string;
+  visible: boolean;
+  onClose: () => void;
+}
+
+function CommentsModal({ mediaId, userId, userName, visible, onClose }: CommentsModalProps) {
+  const { comments } = useComments(mediaId);
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | undefined>(undefined);
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={modalStyles.container}>
+        {/* Header */}
+        <View style={modalStyles.header}>
+          <Text style={modalStyles.headerTitle}>Comments</Text>
+          <TouchableOpacity onPress={onClose} style={modalStyles.closeBtn} accessibilityLabel="Close">
+            <Ionicons name="close" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Comment list */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+        >
+          <ScrollView
+            style={modalStyles.commentList}
+            contentContainerStyle={modalStyles.commentListContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {comments.length === 0 ? (
+              <Text style={modalStyles.emptyText}>No comments yet. Be the first!</Text>
+            ) : (
+              comments.map((c) => (
+                <CommentThread
+                  key={c.id}
+                  comment={c}
+                  userId={userId}
+                  onReply={(id, name) => setReplyTo({ id, name })}
+                />
+              ))
+            )}
+          </ScrollView>
+
+          {/* Comment input */}
+          <View style={modalStyles.inputWrapper}>
+            <CommentInput
+              parentId={mediaId}
+              parentType="media"
+              userId={userId}
+              userName={userName}
+              replyTo={replyTo}
+              onSend={() => setReplyTo(undefined)}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+const modalStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.pageBackground,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  commentList: {
+    flex: 1,
+  },
+  commentListContent: {
+    padding: 16,
+    gap: 16,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginTop: 24,
+  },
+  inputWrapper: {
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.pageBackground,
+  },
+});
 
 // ─── Engagement bar for a single media post ──────────────────────────────────
 
@@ -42,8 +164,14 @@ function PostEngagement({ mediaId, userId, onCommentPress }: PostEngagementProps
   const commentCount = comments.length;
   const topComment = comments[0] ?? null;
 
-  function handleShare() {
-    Alert.alert("Share", "Share coming soon.");
+  async function handleShare() {
+    try {
+      await Share.share({
+        message: `Check out this from Rangtaal! 🪘`,
+      });
+    } catch {
+      // share dismissed or unavailable — no-op
+    }
   }
 
   return (
@@ -106,6 +234,7 @@ function PostEngagement({ mediaId, userId, onCommentPress }: PostEngagementProps
 interface FeedPostProps {
   item: MediaDoc;
   userId: string;
+  userName: string;
   isLast: boolean;
 }
 
@@ -124,15 +253,13 @@ function formatTimeAgo(uploadedAt: number): string {
   return `${diffDays} DAY${diffDays !== 1 ? "S" : ""} AGO`;
 }
 
-function FeedPost({ item, userId, isLast }: FeedPostProps) {
+function FeedPost({ item, userId, userName, isLast }: FeedPostProps) {
+  const [commentsOpen, setCommentsOpen] = useState(false);
+
   // Derive a display name from uploadedBy uid (use first 6 chars as placeholder)
   const uploaderLabel = item.uploadedBy.length > 0
     ? `User ${item.uploadedBy.slice(0, 6)}`
     : "Unknown";
-
-  function handleCommentPress() {
-    Alert.alert("Comments", "Comments coming soon.");
-  }
 
   return (
     <View style={[styles.post, isLast && styles.postLast]}>
@@ -178,10 +305,19 @@ function FeedPost({ item, userId, isLast }: FeedPostProps) {
         <PostEngagement
           mediaId={item.id}
           userId={userId}
-          onCommentPress={handleCommentPress}
+          onCommentPress={() => setCommentsOpen(true)}
         />
         <Text style={styles.timestamp}>{formatTimeAgo(item.uploadedAt)}</Text>
       </View>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        mediaId={item.id}
+        userId={userId}
+        userName={userName}
+        visible={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+      />
 
       {/* Divider */}
       {!isLast && <View style={styles.divider} />}
@@ -192,6 +328,7 @@ function FeedPost({ item, userId, isLast }: FeedPostProps) {
 // ─── Main Gallery screen ──────────────────────────────────────────────────────
 
 export default function GalleryScreen() {
+  const router = useRouter();
   const { user: authUser } = useAuth();
   const { user: userDoc } = useUser(authUser?.uid);
   const { media, loading } = useAllMedia();
@@ -212,10 +349,11 @@ export default function GalleryScreen() {
       <FeedPost
         item={item}
         userId={userId}
+        userName={displayName}
         isLast={index === filteredMedia.length - 1}
       />
     ),
-    [userId, filteredMedia.length]
+    [userId, displayName, filteredMedia.length]
   );
 
   const keyExtractor = useCallback((item: MediaDoc) => item.id, []);
@@ -228,7 +366,7 @@ export default function GalleryScreen() {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.headerIconBtn}
-            onPress={() => Alert.alert("Notifications", "Notifications coming soon.")}
+            onPress={() => router.push("/notifications" as any)}
           >
             <Ionicons name="notifications-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
