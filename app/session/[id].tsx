@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLikes } from "../../src/hooks/useLikes";
+import { useComments } from "../../src/hooks/useComments";
 import {
   View,
   Text,
@@ -13,8 +14,8 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
-import { Video, ResizeMode } from "expo-av";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
@@ -27,12 +28,19 @@ import {
   removeRsvp,
   cancelSession,
 } from "../../src/lib/sessions";
+import { createTutorial } from "../../src/lib/tutorials";
+import { createMedia, deleteMedia } from "../../src/lib/media";
 import {
   Avatar,
   AvatarStack,
   Card,
   SectionHeader,
   GoldButton,
+  LikeButton,
+  EngagementBar,
+  CommentThread,
+  CommentInput,
+  CaptureButton,
 } from "../../src/components";
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
@@ -41,9 +49,68 @@ import { TutorialDoc } from "../../src/types/tutorial";
 import { MediaDoc } from "../../src/types/media";
 import { ClassDoc } from "../../src/types/class";
 
+// ─── Safe lazy-loaded native deps ─────────────────────────────────────────────
+
+let VideoComponent: any = null;
+try { VideoComponent = require("expo-av").Video; } catch {}
+
+let ResizeMode: any = null;
+try { ResizeMode = require("expo-av").ResizeMode; } catch {}
+
+let storage: any = null;
+try { storage = require("@react-native-firebase/storage").default; } catch {}
+
+let ImagePicker: any = null;
+try { ImagePicker = require("expo-image-picker"); } catch {}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GALLERY_COL = 3;
-const GALLERY_SIZE = (SCREEN_WIDTH - spacing.pagePadding * 2 - spacing.xs * 2) / GALLERY_COL;
+const GALLERY_SIZE =
+  (SCREEN_WIDTH - spacing.pagePadding * 2 - spacing.xs * 2) / GALLERY_COL;
+
+function formatLongDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+async function pickAndUploadMedia(
+  sessionId: string,
+  userId: string,
+  mediaTypes: "photo" | "video"
+): Promise<string | null> {
+  if (!ImagePicker) return null;
+  if (!storage) return null;
+
+  const perms = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perms.granted) {
+    Alert.alert("Permission required", "Please allow photo library access.");
+    return null;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes:
+      mediaTypes === "video"
+        ? ImagePicker.MediaTypeOptions.Videos
+        : ImagePicker.MediaTypeOptions.Images,
+    quality: 0.85,
+    allowsEditing: false,
+  });
+
+  if (result.canceled || !result.assets?.length) return null;
+
+  const asset = result.assets[0];
+  const ext = asset.uri.split(".").pop() ?? (mediaTypes === "video" ? "mp4" : "jpg");
+  const path = `sessions/${sessionId}/${mediaTypes}/${Date.now()}.${ext}`;
+
+  const ref = storage().ref(path);
+  await ref.putFile(asset.uri);
+  return await ref.getDownloadURL();
+}
 
 // ─── Section 1: Plum hero header ─────────────────────────────────────────────
 
@@ -54,19 +121,20 @@ interface HeaderSectionProps {
   onBack: () => void;
 }
 
-function formatLongDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function HeaderSection({ dateStr, class_, cancelled, onBack }: HeaderSectionProps) {
+function HeaderSection({
+  dateStr,
+  class_,
+  cancelled,
+  onBack,
+}: HeaderSectionProps) {
   return (
     <View style={styles.heroSection}>
       <SafeAreaView>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={styles.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -75,7 +143,9 @@ function HeaderSection({ dateStr, class_, cancelled, onBack }: HeaderSectionProp
       </Text>
       <Text style={styles.heroDate}>{formatLongDate(dateStr)}</Text>
       {class_ != null && (
-        <Text style={styles.heroTime}>{class_.startTime} – {class_.endTime}</Text>
+        <Text style={styles.heroTime}>
+          {class_.startTime} – {class_.endTime}
+        </Text>
       )}
       {class_ != null && (
         <View style={styles.heroLocationRow}>
@@ -110,32 +180,36 @@ function RsvpSection({
   cancelled,
   cancellationReason,
 }: RsvpSectionProps) {
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const isRsvpd = rsvps.includes(userId);
   const rsvpNames = rsvps.map((_, i) => `Attendee ${i + 1}`);
 
   async function handleRsvpToggle() {
-    if (!userId) return;
-    setLoading(true);
+    if (!userId || submitting) return;
+    setSubmitting(true);
     try {
       if (isRsvpd) {
         await removeRsvp(sessionId, userId);
       } else {
         await rsvpToSession(sessionId, userId);
       }
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Could not update RSVP. Please try again.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
   if (cancelled) {
     return (
-      <View style={[styles.cancelledBanner]}>
-        <Text style={styles.cancelledBannerTitle}>This session was cancelled</Text>
+      <View style={styles.cancelledBanner}>
+        <Text style={styles.cancelledBannerTitle}>
+          This session was cancelled
+        </Text>
         {cancellationReason != null && cancellationReason.length > 0 && (
-          <Text style={styles.cancelledBannerReason}>{cancellationReason}</Text>
+          <Text style={styles.cancelledBannerReason}>
+            {cancellationReason}
+          </Text>
         )}
       </View>
     );
@@ -158,9 +232,12 @@ function RsvpSection({
             </View>
             <View style={styles.confirmedText}>
               <Text style={styles.confirmedTitle}>You're in!</Text>
-              <TouchableOpacity onPress={handleRsvpToggle} disabled={loading}>
+              <TouchableOpacity
+                onPress={handleRsvpToggle}
+                disabled={submitting}
+              >
                 <Text style={styles.confirmedSub}>
-                  {loading ? "Updating…" : "Tap to cancel your RSVP"}
+                  {submitting ? "Updating…" : "Tap to cancel your RSVP"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -170,7 +247,7 @@ function RsvpSection({
         <GoldButton
           label="RSVP to this session"
           onPress={handleRsvpToggle}
-          loading={loading}
+          loading={submitting}
           style={styles.rsvpButton}
         />
       )}
@@ -186,7 +263,11 @@ interface AdminCancelSectionProps {
   cancelled: boolean;
 }
 
-function AdminCancelSection({ sessionId, adminUid, cancelled }: AdminCancelSectionProps) {
+function AdminCancelSection({
+  sessionId,
+  adminUid,
+  cancelled,
+}: AdminCancelSectionProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -218,7 +299,6 @@ function AdminCancelSection({ sessionId, adminUid, cancelled }: AdminCancelSecti
         variant="destructive"
       />
 
-      {/* Bottom sheet modal for cancel reason */}
       <Modal
         visible={sheetOpen}
         transparent
@@ -265,71 +345,130 @@ function AdminCancelSection({ sessionId, adminUid, cancelled }: AdminCancelSecti
   );
 }
 
-// ─── Section 4: Tutorials ─────────────────────────────────────────────────────
+// ─── Section 4: Tutorial card ─────────────────────────────────────────────────
 
 interface TutorialCardProps {
   tutorial: TutorialDoc;
   userPaid: boolean;
   userId: string;
+  userName: string;
 }
 
-function TutorialCard({ tutorial, userPaid, userId }: TutorialCardProps) {
-  const { count: likeCount, isLiked, toggle: toggleLiked } = useLikes(tutorial.id, userId, "tutorial");
+function TutorialCard({
+  tutorial,
+  userPaid,
+  userId,
+  userName,
+}: TutorialCardProps) {
   const [playing, setPlaying] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<
+    { id: string; name: string } | undefined
+  >(undefined);
+  const { comments } = useComments(tutorial.id);
   const locked = !userPaid;
 
   function handlePress() {
     if (locked) {
-      Alert.alert("Unlock Required", "Contact admin to get access to tutorials.");
+      Alert.alert(
+        "Unlock Required",
+        "Contact admin to get access to tutorials."
+      );
       return;
     }
     setPlaying((prev) => !prev);
   }
 
   return (
-    <TouchableOpacity key={tutorial.id} onPress={handlePress} activeOpacity={0.8}>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
       <Card style={styles.tutorialCard}>
-        {/* Gold accent line at top */}
         <View style={styles.tutorialAccentLine} />
         <View style={styles.tutorialRow}>
-          {/* Icon */}
-          <View style={[styles.tutorialIconCircle, locked && styles.tutorialIconCircleLocked]}>
-            <Text style={styles.tutorialIcon}>{locked ? "🔒" : (playing ? "■" : "▶")}</Text>
+          <View
+            style={[
+              styles.tutorialIconCircle,
+              locked && styles.tutorialIconCircleLocked,
+            ]}
+          >
+            <Text style={styles.tutorialIcon}>
+              {locked ? "🔒" : playing ? "■" : "▶"}
+            </Text>
           </View>
-          {/* Info */}
           <View style={styles.tutorialInfo}>
             <Text style={styles.tutorialTitle}>{tutorial.title}</Text>
             {tutorial.description != null && (
-              <Text style={styles.tutorialDesc} numberOfLines={playing ? undefined : 2}>
+              <Text
+                style={styles.tutorialDesc}
+                numberOfLines={playing ? undefined : 2}
+              >
                 {tutorial.description}
               </Text>
             )}
-            <TouchableOpacity
-              onPress={toggleLiked}
-              style={styles.tutorialLikeRow}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Ionicons
-                name={isLiked ? "heart" : "heart-outline"}
-                size={14}
-                color={isLiked ? colors.accent : colors.textSecondary}
-              />
-              {likeCount > 0 && (
-                <Text style={[styles.tutorialLikeCount, isLiked && styles.tutorialLikeCountActive]}>
-                  {likeCount}
-                </Text>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Inline video player for paid users */}
         {playing && !locked && (
-          <Video
-            source={{ uri: tutorial.videoUrl }}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay
-            style={styles.inlineVideo}
+          <>
+            {VideoComponent ? (
+              <VideoComponent
+                source={{ uri: tutorial.videoUrl }}
+                useNativeControls
+                resizeMode={ResizeMode?.CONTAIN ?? "contain"}
+                shouldPlay
+                style={styles.inlineVideo}
+              />
+            ) : (
+              <Text style={styles.videoUnavailable}>
+                Video requires app update
+              </Text>
+            )}
+          </>
+        )}
+
+        {/* Engagement bar below tutorial */}
+        <View style={styles.tutorialEngagement}>
+          <LikeButton
+            parentId={tutorial.id}
+            parentType="tutorial"
+            userId={userId}
           />
+          <TouchableOpacity
+            onPress={() => setCommentOpen((v) => !v)}
+            style={styles.commentToggle}
+            accessibilityLabel="Toggle comments"
+          >
+            <Ionicons
+              name="chatbubble-outline"
+              size={16}
+              color={colors.textSecondary}
+            />
+            {comments.length > 0 && (
+              <Text style={styles.commentCount}>{comments.length}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Inline comment thread */}
+        {commentOpen && (
+          <View style={styles.tutorialComments}>
+            {comments.map((c) => (
+              <CommentThread
+                key={c.id}
+                comment={c}
+                userId={userId}
+                onReply={(id, name) => setReplyTo({ id, name })}
+              />
+            ))}
+            <CommentInput
+              parentId={tutorial.id}
+              parentType="tutorial"
+              userId={userId}
+              userName={userName}
+              replyTo={replyTo}
+              onSend={() => setReplyTo(undefined)}
+            />
+          </View>
         )}
       </Card>
     </TouchableOpacity>
@@ -337,18 +476,68 @@ function TutorialCard({ tutorial, userPaid, userId }: TutorialCardProps) {
 }
 
 interface TutorialsSectionProps {
+  sessionId: string;
   tutorials: TutorialDoc[];
   userPaid: boolean;
   isAdmin: boolean;
   userId: string;
+  userName: string;
 }
 
-function TutorialsSection({ tutorials, userPaid, isAdmin, userId }: TutorialsSectionProps) {
+function TutorialsSection({
+  sessionId,
+  tutorials,
+  userPaid,
+  isAdmin,
+  userId,
+  userName,
+}: TutorialsSectionProps) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handleUploadTutorial() {
+    if (!ImagePicker) {
+      Alert.alert(
+        "Unavailable",
+        "Tutorial upload requires an app update."
+      );
+      return;
+    }
+    if (!storage) {
+      Alert.alert(
+        "Unavailable",
+        "Storage not available. Tutorial upload requires an app update."
+      );
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const url = await pickAndUploadMedia(sessionId, userId, "video");
+      if (!url) return;
+
+      await createTutorial({
+        sessionId,
+        title: `Tutorial ${tutorials.length + 1}`,
+        description: "",
+        videoUrl: url,
+        thumbnailUrl: null,
+        createdBy: userId,
+        order: tutorials.length,
+      });
+    } catch (err: any) {
+      Alert.alert("Upload failed", err?.message ?? "Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <View style={styles.section}>
       <SectionHeader
         title="Tutorials"
-        rightLabel={tutorials.length > 0 ? `${tutorials.length} videos` : undefined}
+        rightLabel={
+          tutorials.length > 0 ? `${tutorials.length} videos` : undefined
+        }
         rightLabelVariant="gray"
         style={styles.sectionHeaderPadded}
       />
@@ -359,14 +548,21 @@ function TutorialsSection({ tutorials, userPaid, isAdmin, userId }: TutorialsSec
         </Card>
       ) : (
         tutorials.map((t) => (
-          <TutorialCard key={t.id} tutorial={t} userPaid={userPaid} userId={userId} />
+          <TutorialCard
+            key={t.id}
+            tutorial={t}
+            userPaid={userPaid}
+            userId={userId}
+            userName={userName}
+          />
         ))
       )}
 
       {isAdmin && (
         <GoldButton
-          label="Upload Tutorial"
-          onPress={() => Alert.alert("Upload", "Tutorial upload coming in Phase 2.")}
+          label={uploading ? "Uploading…" : "Upload Tutorial"}
+          onPress={handleUploadTutorial}
+          loading={uploading}
           variant="plum"
           style={styles.uploadButton}
         />
@@ -377,8 +573,6 @@ function TutorialsSection({ tutorials, userPaid, isAdmin, userId }: TutorialsSec
 
 // ─── Section 5: Gallery ───────────────────────────────────────────────────────
 
-// ─── Gallery cell with like overlay ─────────────────────────────────────────
-
 interface GalleryCellProps {
   item: MediaDoc;
   userId: string;
@@ -386,7 +580,12 @@ interface GalleryCellProps {
   onLongPress: () => void;
 }
 
-function GalleryCell({ item, userId, onPress, onLongPress }: GalleryCellProps) {
+function GalleryCell({
+  item,
+  userId,
+  onPress,
+  onLongPress,
+}: GalleryCellProps) {
   const { count: likeCount, isLiked } = useLikes(item.id, userId, "media");
 
   return (
@@ -406,7 +605,6 @@ function GalleryCell({ item, userId, onPress, onLongPress }: GalleryCellProps) {
           <Text style={styles.galleryPlayIcon}>▶</Text>
         </View>
       )}
-      {/* Like count overlay — bottom-left */}
       <View style={styles.galleryLikeOverlay}>
         <Ionicons
           name={isLiked ? "heart" : "heart-outline"}
@@ -421,32 +619,192 @@ function GalleryCell({ item, userId, onPress, onLongPress }: GalleryCellProps) {
   );
 }
 
+interface MediaPreviewModalProps {
+  item: MediaDoc | null;
+  userId: string;
+  userName: string;
+  onClose: () => void;
+}
+
+function MediaPreviewModal({
+  item,
+  userId,
+  userName,
+  onClose,
+}: MediaPreviewModalProps) {
+  const [replyTo, setReplyTo] = useState<
+    { id: string; name: string } | undefined
+  >(undefined);
+  const { comments } = useComments(item?.id ?? "");
+
+  if (!item) return null;
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.previewOverlay}>
+        {/* Close button */}
+        <TouchableOpacity
+          style={styles.previewClose}
+          onPress={onClose}
+          accessibilityLabel="Close"
+        >
+          <Ionicons name="close" size={28} color={colors.card} />
+        </TouchableOpacity>
+
+        {/* Media content */}
+        {item.type === "photo" ? (
+          <Image
+            source={{ uri: item.storageUrl }}
+            style={styles.previewImage}
+            resizeMode="contain"
+          />
+        ) : VideoComponent ? (
+          <VideoComponent
+            source={{ uri: item.storageUrl }}
+            useNativeControls
+            resizeMode={ResizeMode?.CONTAIN ?? "contain"}
+            shouldPlay
+            style={styles.previewVideo}
+          />
+        ) : (
+          <Text style={styles.videoUnavailable}>Video requires app update</Text>
+        )}
+
+        {/* Engagement + comments below media */}
+        <View style={styles.previewEngagement}>
+          <EngagementBar
+            parentId={item.id}
+            parentType="media"
+            userId={userId}
+            commentCount={comments.length}
+            variant="dark"
+          />
+        </View>
+
+        <ScrollView style={styles.previewComments} keyboardShouldPersistTaps="handled">
+          {comments.map((c) => (
+            <CommentThread
+              key={c.id}
+              comment={c}
+              userId={userId}
+              onReply={(id, name) => setReplyTo({ id, name })}
+            />
+          ))}
+          <CommentInput
+            parentId={item.id}
+            parentType="media"
+            userId={userId}
+            userName={userName}
+            replyTo={replyTo}
+            onSend={() => setReplyTo(undefined)}
+          />
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
 interface GallerySectionProps {
+  sessionId: string;
   media: MediaDoc[];
   isAdmin: boolean;
   userId: string;
+  userName: string;
 }
 
-function GallerySection({ media, isAdmin, userId }: GallerySectionProps) {
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+function GallerySection({
+  sessionId,
+  media,
+  isAdmin,
+  userId,
+  userName,
+}: GallerySectionProps) {
+  const [selectedItem, setSelectedItem] = useState<MediaDoc | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  function handleMediaPress(m: MediaDoc) {
-    if (m.type === "photo") {
-      setPreviewUri(m.storageUrl);
-    } else {
-      Alert.alert("Video", "Video playback coming in Phase 2.");
+  async function handleAddFromRoll() {
+    if (!ImagePicker) {
+      Alert.alert("Unavailable", "Photo upload requires an app update.");
+      return;
+    }
+    if (!storage) {
+      Alert.alert("Unavailable", "Storage not available. Photo upload requires an app update.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const perms = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perms.granted) {
+        Alert.alert("Permission required", "Please allow photo library access.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        quality: 0.85,
+        allowsEditing: false,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      const asset = result.assets[0];
+      const isVideo = asset.type === "video";
+      const ext = asset.uri.split(".").pop() ?? (isVideo ? "mp4" : "jpg");
+      const path = `sessions/${sessionId}/gallery/${Date.now()}.${ext}`;
+      const ref = storage().ref(path);
+      await ref.putFile(asset.uri);
+      const url = await ref.getDownloadURL();
+
+      await createMedia({
+        sessionId,
+        type: isVideo ? "video" : "photo",
+        storageUrl: url,
+        uploadedBy: userId,
+      });
+    } catch (err: any) {
+      Alert.alert("Upload failed", err?.message ?? "Please try again.");
+    } finally {
+      setUploading(false);
     }
   }
 
-  const canDelete = (m: MediaDoc) => isAdmin || m.uploadedBy === userId;
+  function handleLongPress(m: MediaDoc) {
+    const canDelete = isAdmin || m.uploadedBy === userId;
+    if (!canDelete) return;
+
+    Alert.alert(
+      "Delete media?",
+      "This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteMedia(m.id);
+            } catch {
+              Alert.alert("Error", "Could not delete. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  }
 
   return (
     <View style={styles.section}>
       <SectionHeader
         title="Gallery"
-        rightLabel={media.length > 0 ? `+ Add` : "+ Add"}
+        rightLabel={uploading ? "Uploading…" : "+ Add"}
         rightLabelVariant="gold"
-        onRightPress={() => Alert.alert("Add Media", "Media upload coming in Phase 2.")}
+        onRightPress={uploading ? undefined : handleAddFromRoll}
         style={styles.sectionHeaderPadded}
       />
 
@@ -461,38 +819,90 @@ function GallerySection({ media, isAdmin, userId }: GallerySectionProps) {
               key={m.id}
               item={m}
               userId={userId}
-              onPress={() => handleMediaPress(m)}
-              onLongPress={() => {
-                if (canDelete(m)) {
-                  Alert.alert("Delete", "Delete this media? (Phase 2 implementation)");
-                }
-              }}
+              onPress={() => setSelectedItem(m)}
+              onLongPress={() => handleLongPress(m)}
             />
           ))}
         </View>
       )}
 
-      {/* Full-screen photo preview modal */}
-      <Modal
-        visible={previewUri != null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPreviewUri(null)}
-      >
-        <TouchableOpacity
-          style={styles.previewOverlay}
-          onPress={() => setPreviewUri(null)}
-          activeOpacity={1}
-        >
-          {previewUri != null && (
-            <Image
-              source={{ uri: previewUri }}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
-          )}
-        </TouchableOpacity>
-      </Modal>
+      {/* Full-screen media preview modal */}
+      {selectedItem && (
+        <MediaPreviewModal
+          item={selectedItem}
+          userId={userId}
+          userName={userName}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
+
+      {/* CaptureButton FAB */}
+      <CaptureButton onPress={handleAddFromRoll} />
+    </View>
+  );
+}
+
+// ─── Section 6: Session-level comments ───────────────────────────────────────
+
+interface CommentsSectionProps {
+  sessionId: string;
+  userId: string;
+  userName: string;
+}
+
+function CommentsSection({
+  sessionId,
+  userId,
+  userName,
+}: CommentsSectionProps) {
+  const { comments, loading } = useComments(sessionId);
+  const [replyTo, setReplyTo] = useState<
+    { id: string; name: string } | undefined
+  >(undefined);
+
+  return (
+    <View style={styles.section}>
+      <SectionHeader
+        title="Comments"
+        rightLabel={
+          comments.length > 0 ? `${comments.length}` : undefined
+        }
+        rightLabelVariant="gray"
+        style={styles.sectionHeaderPadded}
+      />
+
+      <View style={styles.commentsBody}>
+        {loading ? (
+          <ActivityIndicator color={colors.accent} />
+        ) : comments.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              No comments yet. Be the first!
+            </Text>
+          </Card>
+        ) : (
+          comments.map((c) => (
+            <View key={c.id} style={styles.commentItem}>
+              <CommentThread
+                comment={c}
+                userId={userId}
+                onReply={(id, name) => setReplyTo({ id, name })}
+              />
+            </View>
+          ))
+        )}
+
+        <View style={styles.commentInputWrapper}>
+          <CommentInput
+            parentId={sessionId}
+            parentType="session"
+            userId={userId}
+            userName={userName}
+            replyTo={replyTo}
+            onSend={() => setReplyTo(undefined)}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -546,7 +956,9 @@ export default function SessionDetail() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/(participant)/schedule" as Parameters<typeof router.replace>[0]);
+      router.replace(
+        "/(participant)/schedule" as Parameters<typeof router.replace>[0]
+      );
     }
   }
 
@@ -561,6 +973,7 @@ export default function SessionDetail() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Section 1: Plum hero header */}
         <HeaderSection
@@ -592,17 +1005,28 @@ export default function SessionDetail() {
 
         {/* Section 4: Tutorials */}
         <TutorialsSection
+          sessionId={session.id}
           tutorials={tutorials}
           userPaid={userPaid}
           isAdmin={isAdmin}
           userId={userId}
+          userName={userName}
         />
 
         {/* Section 5: Gallery */}
         <GallerySection
+          sessionId={session.id}
           media={media}
           isAdmin={isAdmin}
           userId={userId}
+          userName={userName}
+        />
+
+        {/* Section 6: Session-level comments */}
+        <CommentsSection
+          sessionId={session.id}
+          userId={userId}
+          userName={userName}
         />
       </ScrollView>
     </View>
@@ -687,9 +1111,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.body,
     color: colors.textBody,
   },
-  rsvpButton: {
-    // Full width already
-  },
+  rsvpButton: {},
   confirmedCard: {
     marginTop: 0,
     padding: spacing.sm,
@@ -751,7 +1173,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.base,
   },
 
-  // Bottom sheet (custom Modal implementation)
+  // Bottom sheet
   sheetOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -854,35 +1276,42 @@ const styles = StyleSheet.create({
     color: colors.textBody,
     marginBottom: spacing.xs,
   },
-  tutorialMeta: {
+  tutorialEngagement: {
     flexDirection: "row",
-    gap: spacing.sm,
+    alignItems: "center",
+    gap: spacing.base,
+    paddingHorizontal: spacing.cardPadding,
+    paddingBottom: spacing.cardPadding,
   },
-  tutorialMetaText: {
+  commentToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  commentCount: {
     fontSize: typography.fontSize.caption,
     color: colors.textSecondary,
   },
-  tutorialLikeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginTop: 4,
-  },
-  tutorialLikeCount: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: "600",
-  },
-  tutorialLikeCountActive: {
-    color: colors.accent,
-  },
-  uploadButton: {
-    marginHorizontal: spacing.pagePadding,
-    marginTop: spacing.sm,
+  tutorialComments: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    padding: spacing.cardPadding,
+    gap: spacing.md,
   },
   inlineVideo: {
     width: "100%",
     height: 220,
+  },
+  videoUnavailable: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.cardPadding,
+  },
+  uploadButton: {
+    marginHorizontal: spacing.pagePadding,
+    marginTop: spacing.sm,
   },
 
   // Gallery
@@ -930,15 +1359,52 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
+
+  // Full-screen preview modal
   previewOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.95)",
+  },
+  previewClose: {
+    position: "absolute",
+    top: 52,
+    right: 20,
+    zIndex: 10,
+    padding: 4,
   },
   previewImage: {
     width: "100%",
-    height: "80%",
+    height: "55%",
+    marginTop: 40,
+  },
+  previewVideo: {
+    width: "100%",
+    height: "55%",
+    marginTop: 40,
+  },
+  previewEngagement: {
+    paddingHorizontal: spacing.pagePadding,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.15)",
+  },
+  previewComments: {
+    flex: 1,
+    paddingHorizontal: spacing.pagePadding,
+    paddingTop: spacing.sm,
+  },
+
+  // Session comments section
+  commentsBody: {
+    paddingHorizontal: spacing.pagePadding,
+    gap: spacing.md,
+  },
+  commentItem: {
+    paddingVertical: spacing.xs,
+  },
+  commentInputWrapper: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.base,
   },
 
   // Loading / not found

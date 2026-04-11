@@ -20,3 +20,15 @@ export { PaymentBanner } from "./PaymentBanner";
 export type { PaymentBannerProps } from "./PaymentBanner";
 
 export { CaptureButton } from "./CaptureButton";
+
+export { LikeButton } from "./LikeButton";
+export type { LikeButtonProps } from "./LikeButton";
+
+export { EngagementBar } from "./EngagementBar";
+export type { EngagementBarProps } from "./EngagementBar";
+
+export { CommentThread } from "./CommentThread";
+export type { CommentThreadProps } from "./CommentThread";
+
+export { CommentInput } from "./CommentInput";
+export type { CommentInputProps } from "./CommentInput";
