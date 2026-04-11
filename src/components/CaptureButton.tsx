@@ -1,8 +1,10 @@
 import React from "react";
 import { TouchableOpacity, StyleSheet } from "react-native";
-import { Camera } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
+
+let Haptics: typeof import("expo-haptics") | null = null;
+try { Haptics = require("expo-haptics"); } catch {}
 
 interface CaptureButtonProps {
   onPress: () => void;
@@ -10,7 +12,11 @@ interface CaptureButtonProps {
 
 export function CaptureButton({ onPress }: CaptureButtonProps) {
   async function handlePress() {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      if (Haptics) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    } catch {}
     onPress();
   }
 
@@ -20,7 +26,7 @@ export function CaptureButton({ onPress }: CaptureButtonProps) {
       onPress={handlePress}
       activeOpacity={0.85}
     >
-      <Camera size={24} color={colors.card} strokeWidth={2} />
+      <Ionicons name="camera" size={24} color="white" />
     </TouchableOpacity>
   );
 }
