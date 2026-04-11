@@ -18,7 +18,7 @@ import {
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useAllMedia } from "../../src/hooks/useAllMedia";
+import { useGalleryFeed, GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
 import { useLikes } from "../../src/hooks/useLikes";
@@ -26,7 +26,7 @@ import { useComments } from "../../src/hooks/useComments";
 import { CommentThread } from "../../src/components/CommentThread";
 import { CommentInput } from "../../src/components/CommentInput";
 import { colors } from "../../src/theme/colors";
-import { MediaDoc } from "../../src/types/media";
+// GalleryFeedItem used instead of MediaDoc
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -232,7 +232,7 @@ function PostEngagement({ mediaId, userId, onCommentPress }: PostEngagementProps
 // ─── Single feed post ─────────────────────────────────────────────────────────
 
 interface FeedPostProps {
-  item: MediaDoc;
+  item: GalleryFeedItem;
   userId: string;
   userName: string;
   isLast: boolean;
@@ -300,6 +300,14 @@ function FeedPost({ item, userId, userName, isLast }: FeedPostProps) {
         </View>
       )}
 
+      {/* Tutorial title if applicable */}
+      {item.source === "tutorial" && item.title ? (
+        <View style={styles.titleRow}>
+          <Text style={styles.tutorialTitle}>{item.title}</Text>
+          {item.description ? <Text style={styles.tutorialDesc}>{item.description}</Text> : null}
+        </View>
+      ) : null}
+
       {/* Engagement + comments */}
       <View style={styles.postFooter}>
         <PostEngagement
@@ -331,7 +339,7 @@ export default function GalleryScreen() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const { user: userDoc } = useUser(authUser?.uid);
-  const { media, loading } = useAllMedia();
+  const { items: media, loading } = useGalleryFeed();
   const [filter, setFilter] = useState<FilterType>("all");
 
   const userId = authUser?.uid ?? "";
@@ -345,7 +353,7 @@ export default function GalleryScreen() {
   });
 
   const renderItem = useCallback(
-    ({ item, index }: { item: MediaDoc; index: number }) => (
+    ({ item, index }: { item: GalleryFeedItem; index: number }) => (
       <FeedPost
         item={item}
         userId={userId}
@@ -356,7 +364,7 @@ export default function GalleryScreen() {
     [userId, displayName, filteredMedia.length]
   );
 
-  const keyExtractor = useCallback((item: MediaDoc) => item.id, []);
+  const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -636,6 +644,22 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginTop: 6,
     marginBottom: 8,
+  },
+
+  // Tutorial title
+  titleRow: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  tutorialTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  tutorialDesc: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 
   // Divider
