@@ -8,7 +8,7 @@ export interface SessionDoc {
   rsvps: string[];           // array of participant userIds
   customMessage: string | null;
   cancellationReason: string | null;
-  cancelledAt: string | null;
+  cancelledAt: number | null;
   cancelledBy: string | null;
   reminderSent: {
     dayBefore: boolean;
