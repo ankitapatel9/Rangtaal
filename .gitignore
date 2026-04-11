@@ -50,3 +50,6 @@ functions/lib/
 functions/node_modules/
 .claude/worktrees/
 .superpowers/
+
+# Cloud Functions secrets
+functions/.env
