@@ -34,4 +34,10 @@ export const typography = {
     normal: 20,
     relaxed: 22,
   },
+
+  // Spread-ready style presets for StyleSheet use
+  bodySmall: { fontSize: 12, lineHeight: 18 },
+  body: { fontSize: 14, lineHeight: 20 },
+  label: { fontSize: 11, letterSpacing: 1.5 },
+  bold: { fontWeight: "700" as const },
 } as const;

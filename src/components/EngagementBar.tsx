@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { MessageCircle } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { LikeButton } from "./LikeButton";
 import { LikeDoc } from "../types/like";
 import { colors } from "../theme/colors";
@@ -41,7 +41,7 @@ export function EngagementBar({
         accessibilityLabel="Comments"
         accessibilityRole="button"
       >
-        <MessageCircle size={20} color={iconColor} />
+        <Ionicons name="chatbubble-outline" size={20} color={iconColor} />
         {commentCount > 0 && (
           <Text style={[styles.count, { color: iconColor }]}>
             {commentCount}

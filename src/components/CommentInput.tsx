@@ -6,7 +6,7 @@ import {
   Text,
   StyleSheet
 } from "react-native";
-import { Send } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { addComment } from "../lib/comments";
 import { CommentDoc } from "../types/comment";
 import { colors } from "../theme/colors";
@@ -82,7 +82,7 @@ export function CommentInput({
           accessibilityLabel="Send"
           accessibilityRole="button"
         >
-          <Send size={18} color={colors.card} />
+          <Ionicons name="send" size={18} color={colors.card} />
         </TouchableOpacity>
       </View>
     </View>

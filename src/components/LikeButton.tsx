@@ -1,12 +1,14 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
-import { Heart } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { useLikes } from "../hooks/useLikes";
 import { LikeDoc } from "../types/like";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
 import { spacing } from "../theme/spacing";
+
+let Haptics: typeof import("expo-haptics") | null = null;
+try { Haptics = require("expo-haptics"); } catch {}
 
 export interface LikeButtonProps {
   parentId: string;
@@ -27,7 +29,11 @@ export function LikeButton({
   const inactiveColor = isDark ? colors.secondary : colors.body;
 
   async function handlePress() {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (Haptics) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch {}
     await toggle();
   }
 
@@ -38,10 +44,10 @@ export function LikeButton({
       accessibilityLabel={isLiked ? "Unlike" : "Like"}
       accessibilityRole="button"
     >
-      <Heart
+      <Ionicons
+        name={isLiked ? "heart" : "heart-outline"}
         size={20}
         color={isLiked ? colors.accent : inactiveColor}
-        fill={isLiked ? colors.accent : "transparent"}
       />
       {count > 0 && (
         <Text

@@ -29,6 +29,10 @@ export const colors = {
   // Avatar backgrounds (alternating)
   avatarPlum: "#2D1B3D",
   avatarGold: "#C9963C",
+
+  // Aliases for component shorthand
+  secondary: "#9CA3AF",   // = textSecondary
+  body: "#5A4B6B",        // = textBody
 } as const;
 
 export type ColorKey = keyof typeof colors;
