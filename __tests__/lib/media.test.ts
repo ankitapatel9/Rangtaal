@@ -61,6 +61,7 @@ describe("createMedia", () => {
     expect(addMock).toHaveBeenCalledWith({
       sessionId: "s1",
       type: "photo",
+      title: "",
       storageUrl: "https://example.com/photo.jpg",
       uploadedBy: "user1",
       uploadedAt: "SERVER_TIMESTAMP",

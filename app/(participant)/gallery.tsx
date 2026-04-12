@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -27,7 +28,17 @@ import { CommentThread } from "../../src/components/CommentThread";
 import { CommentInput } from "../../src/components/CommentInput";
 import { VideoPlayerModal } from "../../src/components/VideoPlayerModal";
 import { colors } from "../../src/theme/colors";
+import { updateMedia, deleteMedia } from "../../src/lib/media";
 // GalleryFeedItem used instead of MediaDoc
+
+// ─── Safe-load expo-av ────────────────────────────────────────────────────────
+
+let VideoComponent: any = null;
+let ResizeModeEnum: any = null;
+try {
+  VideoComponent = require("expo-av").Video;
+  ResizeModeEnum = require("expo-av").ResizeMode;
+} catch {}
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -238,6 +249,7 @@ interface FeedPostProps {
   userName: string;
   userNameMap: Record<string, string>;
   isPaid: boolean;
+  isAdmin: boolean;
   isLast: boolean;
   onVideoPress?: (item: GalleryFeedItem) => void;
 }
@@ -255,10 +267,51 @@ function formatTimeAgo(uploadedAt: number): string {
   return formatTime(uploadedAt).toUpperCase();
 }
 
-function FeedPost({ item, userId, userName, userNameMap, isPaid, isLast, onVideoPress }: FeedPostProps) {
+function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast, onVideoPress }: FeedPostProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   const uploaderLabel = userNameMap[item.uploadedBy] ?? "Unknown";
+  const isOwner = item.uploadedBy === userId;
+
+  function handleMorePress() {
+    Alert.alert(
+      "Media Options",
+      undefined,
+      [
+        {
+          text: "Edit Title",
+          onPress: () => {
+            Alert.prompt(
+              "Edit Title",
+              "Enter a new title",
+              (newTitle) => {
+                if (newTitle !== undefined && newTitle.trim()) {
+                  updateMedia(item.id, { title: newTitle.trim() });
+                }
+              },
+              "plain-text",
+              item.title ?? ""
+            );
+          },
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("Delete?", "This cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => deleteMedia(item.id),
+              },
+            ]);
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  }
 
   return (
     <View style={[styles.post, isLast && styles.postLast]}>
@@ -273,6 +326,11 @@ function FeedPost({ item, userId, userName, userNameMap, isPaid, isLast, onVideo
           <Text style={styles.authorName}>{uploaderLabel}</Text>
           <Text style={styles.sessionLabel}>{formatSessionDate(item.uploadedAt)}</Text>
         </View>
+        {(isOwner || isAdmin) && (
+          <TouchableOpacity onPress={handleMorePress} style={styles.moreBtn} accessibilityLabel="More options">
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Media — edge-to-edge */}
@@ -282,6 +340,17 @@ function FeedPost({ item, userId, userName, userNameMap, isPaid, isLast, onVideo
           style={styles.media}
           resizeMode="cover"
         />
+      ) : VideoComponent ? (
+        <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress?.(item)}>
+          <VideoComponent
+            source={{ uri: item.storageUrl }}
+            style={styles.media}
+            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
+            shouldPlay
+            isLooping
+            isMuted
+          />
+        </TouchableOpacity>
       ) : (
         <TouchableOpacity
           style={styles.videoContainer}
@@ -352,6 +421,7 @@ export default function GalleryScreen() {
 
   const userId = authUser?.uid ?? "";
   const displayName = userDoc?.name ?? "Me";
+  const isAdmin = userDoc?.role === "admin";
 
   const userNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -386,11 +456,12 @@ export default function GalleryScreen() {
         userName={displayName}
         userNameMap={userNameMap}
         isPaid={isPaid}
+        isAdmin={isAdmin}
         isLast={index === filteredMedia.length - 1}
         onVideoPress={handleVideoPress}
       />
     ),
-    [userId, displayName, userNameMap, isPaid, filteredMedia.length, handleVideoPress]
+    [userId, displayName, userNameMap, isPaid, isAdmin, filteredMedia.length, handleVideoPress]
   );
 
   const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
@@ -592,6 +663,9 @@ const styles = StyleSheet.create({
   },
   authorInfo: {
     flex: 1,
+  },
+  moreBtn: {
+    padding: 4,
   },
   authorName: {
     fontSize: 13,

@@ -14,17 +14,26 @@ export async function getMediaForSession(sessionId: string): Promise<MediaDoc[]>
   }));
 }
 
-export async function createMedia(input: CreateMediaInput): Promise<void> {
-  await firestore().collection("media").add({
+export async function createMedia(input: CreateMediaInput & { title?: string }): Promise<string> {
+  const ref = await firestore().collection("media").add({
     sessionId: input.sessionId,
     type: input.type,
+    title: input.title ?? "",
     storageUrl: input.storageUrl,
     uploadedBy: input.uploadedBy,
     uploadedAt: firestore.FieldValue.serverTimestamp(),
     comments: null,
     tags: null,
-    analysis: null
+    analysis: null,
   });
+  return ref.id;
+}
+
+export async function updateMedia(
+  mediaId: string,
+  updates: { title?: string }
+): Promise<void> {
+  await firestore().collection("media").doc(mediaId).update(updates);
 }
 
 export async function deleteMedia(mediaId: string): Promise<void> {

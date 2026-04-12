@@ -2,6 +2,7 @@ export interface MediaDoc {
   id: string;
   sessionId: string;
   type: "photo" | "video";
+  title: string;
   storageUrl: string;
   uploadedBy: string;
   uploadedAt: number;

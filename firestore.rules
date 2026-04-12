@@ -17,7 +17,8 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow delete: if isAdmin() ||
         (isSignedIn() && resource.data.uploadedBy == request.auth.uid);
-      allow update: if isAdmin();
+      allow update: if isAdmin() ||
+        (isSignedIn() && resource.data.uploadedBy == request.auth.uid);
     }
 
     match /users/{uid} {

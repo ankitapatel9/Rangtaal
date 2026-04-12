@@ -11,7 +11,7 @@
  * - Video keeps playing while comment sheet is open
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -37,9 +37,11 @@ import { colors } from "../theme/colors";
 
 let VideoComponent: any = null;
 let ResizeModeEnum: any = null;
+let Audio: any = null;
 try {
   VideoComponent = require("expo-av").Video;
   ResizeModeEnum = require("expo-av").ResizeMode;
+  Audio = require("expo-av").Audio;
 } catch {}
 
 // ─── Dimensions ───────────────────────────────────────────────────────────────
@@ -265,6 +267,16 @@ export function VideoPlayerModal({
   const { count: likeCount, isLiked, toggle: toggleLike } = useLikes(parentId, userId, parentType);
   const { comments } = useComments(parentId);
   const commentCount = comments.length;
+
+  // Ensure audio plays even when the phone is on silent mode (iOS)
+  useEffect(() => {
+    if (visible && Audio) {
+      Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+      });
+    }
+  }, [visible]);
 
   async function handleShare() {
     try {
