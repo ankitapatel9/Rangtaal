@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithPhone, ConfirmationResult } from "../../src/lib/auth";
@@ -65,9 +66,10 @@ export default function LoginScreen() {
         <View style={styles.container}>
           {/* Hero section */}
           <View style={styles.heroSection}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoEmoji}>🪘</Text>
-            </View>
+            <Image
+              source={require("../../assets/icon.png")}
+              style={styles.logoImage}
+            />
             <Text style={styles.wordmark}>Rangtaal</Text>
             <Text style={styles.tagline}>Step into the circle</Text>
           </View>
@@ -131,17 +133,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingTop: spacing.xxxl,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: spacing.base,
-  },
-  logoEmoji: {
-    fontSize: 36,
   },
   wordmark: {
     fontSize: 32,

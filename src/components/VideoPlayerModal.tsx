@@ -70,6 +70,8 @@ function VideoWithLoading({ videoUrl }: { videoUrl: string }) {
         useNativeControls
         resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
         shouldPlay
+        isMuted={false}
+        volume={1.0}
         style={styles.video}
         onPlaybackStatusUpdate={onPlaybackStatusUpdate}
         onLoad={() => setBuffering(false)}

@@ -52,7 +52,24 @@ export default function VerifyScreen() {
   }
 
   function handleDigitChange(text: string, index: number) {
-    const digit = text.replace(/\D/g, "").slice(-1);
+    const cleaned = text.replace(/\D/g, "");
+
+    // iOS SMS autofill pastes the full code into the first box
+    if (cleaned.length > 1) {
+      const chars = cleaned.slice(0, CODE_LENGTH).split("");
+      const newDigits = [...digits];
+      chars.forEach((c, i) => { newDigits[i] = c; });
+      setDigits(newDigits);
+      // Focus the last filled box or the next empty one
+      const nextIndex = Math.min(chars.length, CODE_LENGTH - 1);
+      inputRefs.current[nextIndex]?.focus();
+      if (newDigits.every((d) => d !== "")) {
+        handleVerify(newDigits.join(""));
+      }
+      return;
+    }
+
+    const digit = cleaned.slice(-1);
     const newDigits = [...digits];
     newDigits[index] = digit;
     setDigits(newDigits);
@@ -62,8 +79,7 @@ export default function VerifyScreen() {
     }
 
     if (newDigits.every((d) => d !== "") && digit) {
-      const code = newDigits.join("");
-      handleVerify(code);
+      handleVerify(newDigits.join(""));
     }
   }
 
@@ -122,12 +138,14 @@ export default function VerifyScreen() {
               onFocus={() => setFocusedIndex(index)}
               onBlur={() => setFocusedIndex(null)}
               keyboardType="number-pad"
-              maxLength={2}
+              maxLength={index === 0 ? 6 : 2}
               textAlign="center"
               selectionColor={colors.accent}
               returnKeyType="done"
               editable={!submitting}
               caretHidden={false}
+              textContentType="oneTimeCode"
+              autoComplete="sms-otp"
             />
           ))}
         </View>

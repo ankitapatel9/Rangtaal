@@ -237,6 +237,7 @@ interface FeedPostProps {
   userId: string;
   userName: string;
   userNameMap: Record<string, string>;
+  isPaid: boolean;
   isLast: boolean;
   onVideoPress?: (item: GalleryFeedItem) => void;
 }
@@ -254,7 +255,7 @@ function formatTimeAgo(uploadedAt: number): string {
   return formatTime(uploadedAt).toUpperCase();
 }
 
-function FeedPost({ item, userId, userName, userNameMap, isLast, onVideoPress }: FeedPostProps) {
+function FeedPost({ item, userId, userName, userNameMap, isPaid, isLast, onVideoPress }: FeedPostProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   const uploaderLabel = userNameMap[item.uploadedBy] ?? "Unknown";
@@ -289,11 +290,18 @@ function FeedPost({ item, userId, userName, userNameMap, isLast, onVideoPress }:
         >
           <View style={[styles.media, styles.videoPlaceholder]}>
             <View style={styles.playCircle}>
-              <Ionicons name="play" size={32} color="white" />
+              <Ionicons
+                name={item.source === "tutorial" && !isPaid ? "lock-closed" : "play"}
+                size={32}
+                color="white"
+              />
             </View>
             {item.title ? (
               <Text style={styles.videoPlaceholderTitle}>{item.title}</Text>
             ) : null}
+            {item.source === "tutorial" && !isPaid && (
+              <Text style={styles.videoPlaceholderTitle}>Locked — Contact admin</Text>
+            )}
           </View>
         </TouchableOpacity>
       )}
@@ -358,9 +366,16 @@ export default function GalleryScreen() {
     return true;
   });
 
+  const isPaid = userDoc?.paid === true;
+
   const handleVideoPress = useCallback((item: GalleryFeedItem) => {
+    // Tutorials require payment
+    if (item.source === "tutorial" && !isPaid) {
+      Alert.alert("Unlock Required", "Contact admin to get access to tutorial videos.");
+      return;
+    }
     setActiveVideo(item);
-  }, []);
+  }, [isPaid]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: GalleryFeedItem; index: number }) => (
@@ -369,11 +384,12 @@ export default function GalleryScreen() {
         userId={userId}
         userName={displayName}
         userNameMap={userNameMap}
+        isPaid={isPaid}
         isLast={index === filteredMedia.length - 1}
         onVideoPress={handleVideoPress}
       />
     ),
-    [userId, displayName, userNameMap, filteredMedia.length, handleVideoPress]
+    [userId, displayName, userNameMap, isPaid, filteredMedia.length, handleVideoPress]
   );
 
   const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
