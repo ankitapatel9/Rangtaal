@@ -72,7 +72,10 @@ export default function CameraScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.permissionButton, { backgroundColor: "rgba(255,255,255,0.15)" }]}
-          onPress={() => router.back()}
+          onPress={() => {
+              if (router.canGoBack()) { router.back(); }
+              else { router.replace("/(participant)/gallery" as any); }
+            }}
         >
           <Text style={styles.permissionButtonText}>Go Back</Text>
         </TouchableOpacity>
@@ -231,7 +234,10 @@ export default function CameraScreen() {
       >
         {/* Top bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <TouchableOpacity onPress={() => {
+              if (router.canGoBack()) { router.back(); }
+              else { router.replace("/(participant)/gallery" as any); }
+            }} style={styles.closeButton}>
             <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
           <View style={styles.sessionTagPill}>
