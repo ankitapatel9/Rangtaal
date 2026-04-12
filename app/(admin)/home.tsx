@@ -148,11 +148,13 @@ export default function AdminHome() {
   const nextSession = getNextSession(sessions);
   const userName = userDoc?.name ?? "Admin";
 
+  const userId = authUser?.uid ?? "";
   const userNameMap = useMemo(() => {
     const map: Record<string, string> = {};
+    if (userId && userName) map[userId] = userName;
     users.forEach((u) => { map[u.uid] = u.name; });
     return map;
-  }, [users]);
+  }, [users, userId, userName]);
 
   function navigateToSession(id: string) {
     router.push(`/session/${id}` as Parameters<typeof router.push>[0]);

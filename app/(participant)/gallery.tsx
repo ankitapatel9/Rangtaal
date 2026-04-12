@@ -355,6 +355,7 @@ export default function GalleryScreen() {
 
   const userNameMap = useMemo(() => {
     const map: Record<string, string> = {};
+    if (userId && displayName) map[userId] = displayName;
     users.forEach((u) => { map[u.uid] = u.name; });
     return map;
   }, [users]);
