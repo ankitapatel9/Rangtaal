@@ -275,25 +275,9 @@ function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast
 
   function handleMorePress() {
     Alert.alert(
-      "Media Options",
+      "Options",
       undefined,
       [
-        {
-          text: "Edit Title",
-          onPress: () => {
-            Alert.prompt(
-              "Edit Title",
-              "Enter a new title",
-              (newTitle) => {
-                if (newTitle !== undefined && newTitle.trim()) {
-                  updateMedia(item.id, { title: newTitle.trim() });
-                }
-              },
-              "plain-text",
-              item.title ?? ""
-            );
-          },
-        },
         {
           text: "Delete",
           style: "destructive",

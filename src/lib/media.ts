@@ -15,10 +15,12 @@ export async function getMediaForSession(sessionId: string): Promise<MediaDoc[]>
 }
 
 export async function createMedia(input: CreateMediaInput & { title?: string }): Promise<string> {
+  // Auto-generate internal title: userId_sessionId_timestamp
+  const autoTitle = input.title || `${input.uploadedBy}_${input.sessionId}_${Date.now()}`;
   const ref = await firestore().collection("media").add({
     sessionId: input.sessionId,
     type: input.type,
-    title: input.title ?? "",
+    title: autoTitle,
     storageUrl: input.storageUrl,
     uploadedBy: input.uploadedBy,
     uploadedAt: firestore.FieldValue.serverTimestamp(),
