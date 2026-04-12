@@ -23,6 +23,7 @@ export default function RootLayout() {
     const inSessionRoute = segments[0] === "session";
     const inNotifications = segments[0] === "notifications";
     const inCamera = segments[0] === "camera";
+    const inFirebaseAuth = segments[0] === "firebaseauth";
 
     if (!authUser) {
       if (!inAuthGroup) router.replace("/(auth)/login" as any);
@@ -36,7 +37,7 @@ export default function RootLayout() {
 
     // Shared routes like /session/[id] are accessible to both roles
     // — skip the role-group redirect if the user is already on one.
-    if (inSessionRoute || inNotifications || inCamera) return;
+    if (inSessionRoute || inNotifications || inCamera || inFirebaseAuth) return;
 
     if (userDoc?.role === "admin") {
       if (!inAdminGroup) router.replace("/(admin)/home" as any);

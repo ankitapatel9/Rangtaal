@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { View } from "react-native";
 
 export default function ParticipantLayout() {
   return (
@@ -33,10 +34,22 @@ export default function ParticipantLayout() {
         }}
       />
       <Tabs.Screen
-        name="videos"
+        name="capture"
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="videocam-outline" color={color} size={size} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: "#C9963C",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Ionicons name="camera" size={22} color="white" />
+            </View>
           ),
         }}
       />
@@ -56,6 +69,7 @@ export default function ParticipantLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="videos" options={{ href: null }} />
     </Tabs>
   );
 }

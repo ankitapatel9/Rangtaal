@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { View } from "react-native";
 
 export default function AdminLayout() {
   return (
@@ -33,10 +34,22 @@ export default function AdminLayout() {
         }}
       />
       <Tabs.Screen
-        name="community"
+        name="capture"
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" color={color} size={size} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: "#C9963C",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Ionicons name="camera" size={22} color="white" />
+            </View>
           ),
         }}
       />
@@ -56,10 +69,8 @@ export default function AdminLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="finance"
-        options={{ href: null }}
-      />
+      <Tabs.Screen name="community" options={{ href: null }} />
+      <Tabs.Screen name="finance" options={{ href: null }} />
     </Tabs>
   );
 }
