@@ -1,9 +1,11 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import { colors } from "../../src/theme/colors";
 
 export default function AdminLayout() {
+  const router = useRouter();
+
   return (
     <Tabs
       screenOptions={{
@@ -37,20 +39,30 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="capture"
         options={{
-          tabBarIcon: () => (
-            <View
+          tabBarButton: () => (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/(admin)/capture" as any)}
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: colors.accent,
                 alignItems: "center",
                 justifyContent: "center",
-                marginBottom: 4,
+                flex: 1,
+                paddingTop: 6,
               }}
             >
-              <Ionicons name="camera" size={22} color="white" />
-            </View>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: colors.accent,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="camera" size={22} color="white" />
+              </View>
+            </TouchableOpacity>
           ),
         }}
       />

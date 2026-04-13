@@ -1,44 +1,44 @@
-// Rangtaal Brand Palette — from the logo
-// Four vibrant brand colors: Plum, Gold, Orange, Green
+// Rangtaal Brand Palette — Vibrant, from the logo
+// Four brand colors: Plum, Gold, Orange, Green
 
 export const colors = {
-  // Brand colors — all from the Rangtaal logo
-  primary: "#342145",         // Deep Plum — headers, hero backgrounds
-  accent: "#D4A843",          // Saffron Gold — primary CTAs, buttons
-  orange: "#C85A2A",          // Warm Orange — highlights, badges, dots
-  green: "#2D6B4F",           // Forest Green — success, confirmed, paid
+  // Brand colors — VIBRANT
+  primary: "#2A1040",         // Rich Plum
+  accent: "#E8B032",          // Bright Gold — pops on buttons
+  orange: "#D4622A",          // Vivid Orange — warm energy
+  green: "#2E7D55",           // Rich Green — success, confirmed
 
   // Backgrounds
-  pageBackground: "#FAF7F2",  // Warm Ivory from logo outer ring
-  card: "#FFFFFF",            // White — floating cards
+  pageBackground: "#F9F6F1",  // Warm Ivory
+  card: "#FFFFFF",
 
   // Text
-  textBody: "#4A3860",        // Muted Plum
-  textSecondary: "#8B8FA3",   // Gray
+  textBody: "#40305A",        // Plum body
+  textSecondary: "#858A9E",   // Balanced gray
 
   // UI
-  border: "#E5DFD6",          // Warm Gray
-  destructive: "#D94032",     // Red — cancel, delete
+  border: "#E2DCD2",
+  destructive: "#E53935",
 
-  // Semantic — using brand colors
-  paymentBannerBg: "#FFF3D0", // Light gold
-  cancelledBg: "#FFEBEE",     // Light red
-  successBg: "#E8F5EE",       // Light green
-  orangeBg: "#FFF0E8",        // Light orange
+  // Semantic
+  paymentBannerBg: "#FFF2CC",   // Brighter yellow
+  cancelledBg: "#FFEBEE",
+  successBg: "#E0F2E9",
+  orangeBg: "#FFEDE0",
 
   // Hero gradient
-  heroGradientStart: "#342145",
-  heroGradientEnd: "#4A3060",
+  heroGradientStart: "#2A1040",
+  heroGradientEnd: "#3D2058",
 
-  // Avatar backgrounds — rotate through brand colors
-  avatarPlum: "#342145",
-  avatarGold: "#D4A843",
-  avatarOrange: "#C85A2A",
-  avatarGreen: "#2D6B4F",
+  // Avatars — rotate all 4 vibrant colors
+  avatarPlum: "#2A1040",
+  avatarGold: "#E8B032",
+  avatarOrange: "#D4622A",
+  avatarGreen: "#2E7D55",
 
   // Aliases
-  secondary: "#8B8FA3",
-  body: "#4A3860",
+  secondary: "#858A9E",
+  body: "#40305A",
 } as const;
 
 export type ColorKey = keyof typeof colors;
