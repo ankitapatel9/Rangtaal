@@ -43,3 +43,14 @@ export async function cancelSession(
     cancelledBy: adminUid,
   });
 }
+
+export async function updateSessionTopic(
+  sessionId: string,
+  topic: string,
+  topicDescription: string
+): Promise<void> {
+  await firestore().collection("sessions").doc(sessionId).update({
+    topic,
+    topicDescription,
+  });
+}

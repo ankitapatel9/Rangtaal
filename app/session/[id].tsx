@@ -27,6 +27,7 @@ import {
   rsvpToSession,
   removeRsvp,
   cancelSession,
+  updateSessionTopic,
 } from "../../src/lib/sessions";
 import { createTutorial } from "../../src/lib/tutorials";
 import { createMedia, deleteMedia } from "../../src/lib/media";
@@ -336,6 +337,60 @@ function AdminCancelSection({
           />
         </View>
       </Modal>
+    </View>
+  );
+}
+
+// ─── Section 3b: Admin set topic ─────────────────────────────────────────────
+
+interface AdminSetTopicSectionProps {
+  sessionId: string;
+  currentTopic: string | null;
+}
+
+function AdminSetTopicSection({ sessionId, currentTopic }: AdminSetTopicSectionProps) {
+  function handleSetTopic() {
+    Alert.prompt(
+      "Set Topic",
+      "What's the topic for this session?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Next",
+          onPress: (topic) => {
+            const trimmedTopic = topic?.trim();
+            if (!trimmedTopic) return;
+            Alert.prompt(
+              "Description (optional)",
+              "Add a short description for this topic.",
+              [
+                { text: "Skip", onPress: () => updateSessionTopic(sessionId, trimmedTopic, "").catch(() => Alert.alert("Error", "Could not set topic.")) },
+                {
+                  text: "Save",
+                  onPress: (desc) => {
+                    updateSessionTopic(sessionId, trimmedTopic, desc?.trim() ?? "").catch(() =>
+                      Alert.alert("Error", "Could not set topic.")
+                    );
+                  },
+                },
+              ],
+              "plain-text"
+            );
+          },
+        },
+      ],
+      "plain-text",
+      currentTopic ?? ""
+    );
+  }
+
+  return (
+    <View style={styles.adminSetTopicSection}>
+      <GoldButton
+        label={currentTopic ? "Update Topic" : "Set Topic"}
+        onPress={handleSetTopic}
+        variant="plum"
+      />
     </View>
   );
 }
@@ -970,6 +1025,14 @@ export default function SessionDetail() {
           />
         )}
 
+        {/* Section 3b: Admin set topic */}
+        {isAdmin && !isCancelled && (
+          <AdminSetTopicSection
+            sessionId={session.id}
+            currentTopic={session.topic ?? null}
+          />
+        )}
+
         {/* Section 4: Tutorials */}
         <TutorialsSection
           sessionId={session.id}
@@ -1138,6 +1201,12 @@ const styles = StyleSheet.create({
   adminSection: {
     marginHorizontal: spacing.pagePadding,
     marginTop: spacing.base,
+  },
+
+  // Admin set topic section
+  adminSetTopicSection: {
+    marginHorizontal: spacing.pagePadding,
+    marginTop: spacing.sm,
   },
 
   // Bottom sheet

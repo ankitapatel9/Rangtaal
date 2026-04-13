@@ -41,6 +41,10 @@ import { SessionDoc } from "../../src/types/session";
 import { ClassDoc } from "../../src/types/class";
 import { AnnouncementDoc } from "../../src/types/announcement";
 import { formatTimeAgo } from "../../src/lib/formatTime";
+import {
+  createAnnouncement,
+  dismissAnnouncement,
+} from "../../src/lib/announcements";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -145,12 +149,29 @@ function NoSessionCard() {
 interface AnnouncementCardProps {
   announcement: AnnouncementDoc;
   authorName: string;
+  isAdmin?: boolean;
 }
 
-function AnnouncementCard({ announcement, authorName }: AnnouncementCardProps) {
+function AnnouncementCard({ announcement, authorName, isAdmin }: AnnouncementCardProps) {
   const ts = announcement.createdAt
     ? formatTimeAgo(announcement.createdAt)
     : "";
+
+  function handleDismiss() {
+    Alert.alert(
+      "Dismiss Announcement",
+      "Remove this announcement for all users?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Dismiss",
+          style: "destructive",
+          onPress: () => dismissAnnouncement(announcement.id),
+        },
+      ]
+    );
+  }
+
   return (
     <View style={styles.announcementCard}>
       <View style={styles.announcementBorder} />
@@ -164,6 +185,16 @@ function AnnouncementCard({ announcement, authorName }: AnnouncementCardProps) {
               {ts ? `  ·  ${ts}` : ""}
             </Text>
           </View>
+          {isAdmin && (
+            <TouchableOpacity
+              onPress={handleDismiss}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.announcementDismiss}
+              accessibilityLabel="Dismiss announcement"
+            >
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -423,11 +454,43 @@ export default function ParticipantHome() {
           <NoSessionCard />
         )}
 
+        {/* 2b. Admin: Post Announcement button */}
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.postAnnouncementBtn}
+            activeOpacity={0.75}
+            onPress={() => {
+              Alert.prompt(
+                "Post Announcement",
+                "What would you like to announce?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Post",
+                    onPress: (text) => {
+                      const trimmed = text?.trim();
+                      if (!trimmed) return;
+                      createAnnouncement({ text: trimmed, createdBy: userId }).catch(() =>
+                        Alert.alert("Error", "Could not post announcement.")
+                      );
+                    },
+                  },
+                ],
+                "plain-text"
+              );
+            }}
+          >
+            <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
+            <Text style={styles.postAnnouncementText}>Post Announcement</Text>
+          </TouchableOpacity>
+        )}
+
         {/* 3. Announcement card (latest active only) */}
         {latestAnnouncement != null && (
           <AnnouncementCard
             announcement={latestAnnouncement}
             authorName={userNameMap[latestAnnouncement.createdBy] ?? "Admin"}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -575,6 +638,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  // Post Announcement button (admin only)
+  postAnnouncementBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginHorizontal: spacing.pagePadding,
+    marginBottom: spacing.base,
+    backgroundColor: colors.card,
+    borderRadius: spacing.cardRadius,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.base,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  postAnnouncementText: {
+    fontSize: typography.fontSize.body,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.accent,
+  },
+
   // Announcement card
   announcementCard: {
     marginHorizontal: spacing.pagePadding,
@@ -614,6 +698,10 @@ const styles = StyleSheet.create({
   announcementMeta: {
     fontSize: typography.fontSize.caption,
     color: colors.textSecondary,
+  },
+  announcementDismiss: {
+    padding: 2,
+    alignSelf: "flex-start",
   },
 
   // Focus card
