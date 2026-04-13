@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   replyCard: {
-    backgroundColor: "#FAF7F2",
+    backgroundColor: colors.pageBackground,
     borderRadius: 12,
     padding: 10,
   },

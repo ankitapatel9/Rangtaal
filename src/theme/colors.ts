@@ -1,37 +1,37 @@
 // Rangtaal Brand Palette — Plum & Gold (Vibrant)
 
 export const colors = {
-  // Brand — more vibrant
-  primary: "#1E0A2E",         // Deeper Plum — richer, more contrast
-  accent: "#D4A23C",          // Brighter Gold — more pop on CTAs
+  // Brand — vibrant, high contrast
+  primary: "#180728",         // Deep Plum — rich and bold
+  accent: "#E0A830",          // Vibrant Gold — eye-catching CTAs
 
   // Backgrounds
-  pageBackground: "#FAFAF7",  // Slightly cooler ivory — crisper feel
+  pageBackground: "#F8F7F4",  // Warm off-white — clean and crisp
   card: "#FFFFFF",            // White — floating cards
 
   // Text
-  textBody: "#4A3B5E",        // Richer Plum body text
-  textSecondary: "#8B8FA3",   // Slightly warmer gray
+  textBody: "#3D2B52",        // Rich Plum body text — readable
+  textSecondary: "#7E839A",   // Balanced gray
 
   // UI
-  border: "#E5E0D8",          // Warm Gray — subtle but defined
-  destructive: "#E53935",     // Brighter red — more noticeable
+  border: "#E2DDD5",          // Warm Gray — defined borders
+  destructive: "#E53935",     // Bright red
 
   // Semantic
-  paymentBannerBg: "#FFF6E0",
+  paymentBannerBg: "#FFF3D0",
   cancelledBg: "#FFEBEE",
 
-  // Hero gradient stops — richer gradient
-  heroGradientStart: "#1E0A2E",
-  heroGradientEnd: "#2D1B3D",
+  // Hero gradient stops — dramatic gradient
+  heroGradientStart: "#180728",
+  heroGradientEnd: "#2A1540",
 
   // Avatar backgrounds
-  avatarPlum: "#1E0A2E",
-  avatarGold: "#D4A23C",
+  avatarPlum: "#180728",
+  avatarGold: "#E0A830",
 
   // Aliases
-  secondary: "#8B8FA3",
-  body: "#4A3B5E",
+  secondary: "#7E839A",
+  body: "#3D2B52",
 } as const;
 
 export type ColorKey = keyof typeof colors;

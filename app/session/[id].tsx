@@ -1203,7 +1203,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: spacing.cardRadiusLg,
     overflow: "hidden",
-    shadowColor: "#2D1B3D",
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,

@@ -1,18 +1,19 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View } from "react-native";
+import { colors } from "../../src/theme/colors";
 
 export default function ParticipantLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#C9963C",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.secondary,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: "#E8E2D9",
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
         },
       }}
@@ -36,13 +37,13 @@ export default function ParticipantLayout() {
       <Tabs.Screen
         name="capture"
         options={{
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: () => (
             <View
               style={{
                 width: 44,
                 height: 44,
                 borderRadius: 22,
-                backgroundColor: "#C9963C",
+                backgroundColor: colors.accent,
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 4,
