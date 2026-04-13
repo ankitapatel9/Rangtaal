@@ -329,8 +329,8 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
         <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress?.(item)}>
           <VideoComponent
             source={{ uri: item.storageUrl }}
-            style={styles.media}
-            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
+            style={styles.videoContainer}
+            resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
             shouldPlay={isVisible}
             isLooping
             isMuted
@@ -678,11 +678,13 @@ const styles = StyleSheet.create({
   // Media — edge-to-edge, no border radius
   media: {
     width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH, // 1:1 ratio like Instagram
+    aspectRatio: 4 / 3,
   },
   videoContainer: {
     width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH,
+    aspectRatio: 9 / 16,
+    maxHeight: 500,
+    backgroundColor: "#000",
   },
   videoPlaceholder: {
     backgroundColor: colors.primary,

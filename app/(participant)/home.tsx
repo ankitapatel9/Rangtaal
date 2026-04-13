@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -148,6 +149,8 @@ interface MediaPostProps {
 }
 
 function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
+  const [mediaLoading, setMediaLoading] = useState(true);
+
   return (
     <View style={styles.mediaPost}>
       {/* Author row */}
@@ -157,33 +160,44 @@ function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
           <Text style={styles.mediaAuthorName}>{authorName}</Text>
           <Text style={styles.mediaTimestamp}>{formatTimeAgo(item.uploadedAt)}</Text>
         </View>
+        {item.source === "tutorial" && item.title && !item.title.includes("_") ? (
+          <Text style={styles.mediaInlineTitle}>{item.title}</Text>
+        ) : null}
       </View>
 
-      {/* Media — edge to edge */}
+      {/* Loading shimmer */}
+      {mediaLoading && (
+        <View style={styles.mediaShimmer}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      )}
+
+      {/* Media — edge to edge, auto-fit */}
       {item.type === "photo" ? (
-        <Image source={{ uri: item.storageUrl }} style={styles.mediaImage} resizeMode="cover" />
+        <Image
+          source={{ uri: item.storageUrl }}
+          style={styles.mediaImage}
+          resizeMode="cover"
+          onLoad={() => setMediaLoading(false)}
+        />
       ) : VideoComponent ? (
         <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress(item)}>
           <VideoComponent
             source={{ uri: item.storageUrl }}
-            style={styles.mediaImage}
-            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
+            style={styles.mediaVideo}
+            resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
             shouldPlay
             isLooping
             isMuted
+            onLoad={() => setMediaLoading(false)}
+            progressUpdateIntervalMillis={500}
           />
         </TouchableOpacity>
       ) : (
         <TouchableOpacity activeOpacity={0.85} onPress={() => onVideoPress(item)} style={styles.mediaVideoPlaceholder}>
           <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.8)" />
-          {item.title ? <Text style={styles.mediaPlaceholderTitle}>{item.title}</Text> : null}
         </TouchableOpacity>
       )}
-
-      {/* Title for tutorials */}
-      {item.source === "tutorial" && item.title && !item.title.includes("_") ? (
-        <Text style={styles.mediaTitleText}>{item.title}</Text>
-      ) : null}
 
       {/* Divider */}
       <View style={styles.mediaDivider} />
@@ -409,9 +423,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textSecondary,
   },
+  mediaShimmer: {
+    width: "100%",
+    height: 200,
+    backgroundColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   mediaImage: {
     width: Dimensions.get("window").width,
     aspectRatio: 4 / 3,
+  },
+  mediaVideo: {
+    width: Dimensions.get("window").width,
+    aspectRatio: 9 / 16,
+    maxHeight: 500,
+    backgroundColor: "#000",
   },
   mediaVideoPlaceholder: {
     width: Dimensions.get("window").width,
@@ -420,17 +447,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  mediaPlaceholderTitle: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
-    marginTop: 8,
-  },
-  mediaTitleText: {
-    fontSize: 15,
+  mediaInlineTitle: {
+    fontSize: 13,
     fontWeight: "600",
-    color: colors.primary,
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    color: colors.accent,
   },
   mediaDivider: {
     height: 1,
