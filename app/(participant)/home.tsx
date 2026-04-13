@@ -28,6 +28,8 @@ import {
   VideoPlayerModal,
 } from "../../src/components";
 import { GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
+import { useLikes } from "../../src/hooks/useLikes";
+import { useComments } from "../../src/hooks/useComments";
 import { NotificationBellIcon } from "../../src/components/NotificationBellIcon";
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
@@ -145,11 +147,34 @@ try { VideoComponent = require("expo-av").Video; ResizeModeEnum = require("expo-
 interface MediaPostProps {
   item: GalleryFeedItem;
   authorName: string;
+  userId: string;
   onVideoPress: (item: GalleryFeedItem) => void;
 }
 
-function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
+function MediaPostEngagement({ parentId, parentType, userId }: { parentId: string; parentType: "media" | "tutorial"; userId: string }) {
+  const { count: likeCount, isLiked, toggle: toggleLike } = useLikes(parentId, userId, parentType);
+  const { comments } = useComments(parentId);
+
+  return (
+    <View style={styles.engagementRow}>
+      <TouchableOpacity onPress={toggleLike} style={styles.engagementBtn} activeOpacity={0.7}>
+        <Ionicons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? colors.orange : colors.primary} />
+        {likeCount > 0 && <Text style={styles.engagementCount}>{likeCount}</Text>}
+      </TouchableOpacity>
+      <View style={styles.engagementBtn}>
+        <Ionicons name="chatbubble-outline" size={22} color={colors.primary} />
+        {comments.length > 0 && <Text style={styles.engagementCount}>{comments.length}</Text>}
+      </View>
+      <TouchableOpacity style={styles.engagementBtn} activeOpacity={0.7}>
+        <Ionicons name="share-outline" size={22} color={colors.primary} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function MediaPost({ item, authorName, userId, onVideoPress }: MediaPostProps) {
   const [mediaLoading, setMediaLoading] = useState(true);
+  const parentType = item.source === "tutorial" ? "tutorial" as const : "media" as const;
 
   return (
     <View style={styles.mediaPost}>
@@ -172,7 +197,7 @@ function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
         </View>
       )}
 
-      {/* Media — edge to edge, auto-fit */}
+      {/* Media — edge to edge */}
       {item.type === "photo" ? (
         <Image
           source={{ uri: item.storageUrl }}
@@ -198,6 +223,9 @@ function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
           <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.8)" />
         </TouchableOpacity>
       )}
+
+      {/* Likes, comments, share */}
+      <MediaPostEngagement parentId={item.id} parentType={parentType} userId={userId} />
 
       {/* Divider */}
       <View style={styles.mediaDivider} />
@@ -266,6 +294,7 @@ export default function ParticipantHome() {
             key={item.id}
             item={item}
             authorName={userNameMap[item.uploadedBy] ?? "Someone"}
+            userId={userId}
             onVideoPress={(v) => setActiveVideo(v)}
           />
         ))}
@@ -450,9 +479,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.accent,
   },
+  engagementRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  engagementBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  engagementCount: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.primary,
+  },
   mediaDivider: {
     height: 1,
     backgroundColor: colors.border,
-    marginTop: 12,
   },
 });
