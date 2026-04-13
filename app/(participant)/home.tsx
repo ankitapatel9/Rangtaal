@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Image,
+  Dimensions,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
@@ -21,7 +24,9 @@ import {
   SectionHeader,
   GoldButton,
   PaymentBanner,
+  VideoPlayerModal,
 } from "../../src/components";
+import { GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
 import { NotificationBellIcon } from "../../src/components/NotificationBellIcon";
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
@@ -128,31 +133,61 @@ function NoSessionCard() {
   );
 }
 
-// ─── Static feed items (MVP) ─────────────────────────────────────────────────
+// ─── Safe-load expo-av ──────────────────────────────────────────────────────
 
-interface FeedItemProps {
+let VideoComponent: any = null;
+let ResizeModeEnum: any = null;
+try { VideoComponent = require("expo-av").Video; ResizeModeEnum = require("expo-av").ResizeMode; } catch {}
+
+// ─── Media feed post (Instagram-style) ──────────────────────────────────────
+
+interface MediaPostProps {
+  item: GalleryFeedItem;
   authorName: string;
-  action: string;
-  meta: string;
-  preview: string;
+  onVideoPress: (item: GalleryFeedItem) => void;
 }
 
-function FeedItem({ authorName, action, meta, preview }: FeedItemProps) {
+function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
   return (
-    <Card style={styles.feedCard}>
-      <View style={styles.feedHeader}>
-        <Avatar name={authorName} size={36} />
-        <View style={styles.feedHeaderText}>
-          <Text style={styles.feedAction}>
-            <Text style={styles.feedAuthor}>{authorName}</Text>
-            {" "}
-            <Text>{action}</Text>
-          </Text>
-          <Text style={styles.feedMeta}>{meta}</Text>
+    <View style={styles.mediaPost}>
+      {/* Author row */}
+      <View style={styles.mediaAuthorRow}>
+        <Avatar name={authorName} size={32} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.mediaAuthorName}>{authorName}</Text>
+          <Text style={styles.mediaTimestamp}>{formatTimeAgo(item.uploadedAt)}</Text>
         </View>
       </View>
-      <Text style={styles.feedPreview}>{preview}</Text>
-    </Card>
+
+      {/* Media — edge to edge */}
+      {item.type === "photo" ? (
+        <Image source={{ uri: item.storageUrl }} style={styles.mediaImage} resizeMode="cover" />
+      ) : VideoComponent ? (
+        <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress(item)}>
+          <VideoComponent
+            source={{ uri: item.storageUrl }}
+            style={styles.mediaImage}
+            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
+            shouldPlay
+            isLooping
+            isMuted
+          />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity activeOpacity={0.85} onPress={() => onVideoPress(item)} style={styles.mediaVideoPlaceholder}>
+          <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.8)" />
+          {item.title ? <Text style={styles.mediaPlaceholderTitle}>{item.title}</Text> : null}
+        </TouchableOpacity>
+      )}
+
+      {/* Title for tutorials */}
+      {item.source === "tutorial" && item.title && !item.title.includes("_") ? (
+        <Text style={styles.mediaTitleText}>{item.title}</Text>
+      ) : null}
+
+      {/* Divider */}
+      <View style={styles.mediaDivider} />
+    </View>
   );
 }
 
@@ -166,6 +201,8 @@ export default function ParticipantHome() {
   const { sessions } = useSessions(class_?.id);
   const { items: feedItems } = useGalleryFeed();
   const userNameMap = useUserNames();
+
+  const [activeVideo, setActiveVideo] = useState<GalleryFeedItem | null>(null);
 
   const nextSession = getNextSession(sessions);
   const userName = userDoc?.name ?? "You";
@@ -209,34 +246,31 @@ export default function ParticipantHome() {
           <NoSessionCard />
         )}
 
-        {/* Activity feed */}
-        <SectionHeader
-          title="RECENT"
-          style={styles.sectionHeader}
-        />
-
-        {feedItems.length === 0 ? (
-          <Card style={styles.feedCard}>
-            <Text style={styles.feedPreview}>No recent activity.</Text>
-          </Card>
-        ) : (
-          feedItems.slice(0, 5).map((item) => (
-            <FeedItem
-              key={item.id}
-              authorName={userNameMap[item.uploadedBy] ?? "Someone"}
-              action={
-                item.source === "tutorial"
-                  ? "posted a tutorial"
-                  : item.type === "photo"
-                  ? "added a photo"
-                  : "added a video"
-              }
-              meta={formatTimeAgo(item.uploadedAt)}
-              preview={item.title ?? ""}
-            />
-          ))
-        )}
+        {/* Gallery feed inline */}
+        {feedItems.length > 0 && feedItems.slice(0, 5).map((item) => (
+          <MediaPost
+            key={item.id}
+            item={item}
+            authorName={userNameMap[item.uploadedBy] ?? "Someone"}
+            onVideoPress={(v) => setActiveVideo(v)}
+          />
+        ))}
       </ScrollView>
+
+      {/* Video player modal */}
+      {activeVideo && activeVideo.type === "video" && (
+        <VideoPlayerModal
+          visible
+          onClose={() => setActiveVideo(null)}
+          videoUrl={activeVideo.storageUrl}
+          title={activeVideo.title ?? ""}
+          uploaderName={userNameMap[activeVideo.uploadedBy] ?? ""}
+          parentId={activeVideo.id}
+          parentType={activeVideo.source === "tutorial" ? "tutorial" : "media"}
+          userId={userId}
+          userName={userName}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -355,42 +389,52 @@ const styles = StyleSheet.create({
   },
 
   // Section header
-  sectionHeader: {
-    paddingHorizontal: spacing.pagePadding,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
+  // Media feed posts
+  mediaPost: {
+    marginTop: 8,
   },
-
-  // Feed items
-  feedCard: {
-    marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.cardGap,
-  },
-  feedHeader: {
+  mediaAuthorRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.sm,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  feedHeaderText: {
-    flex: 1,
-    marginLeft: spacing.sm,
-  },
-  feedAction: {
-    fontSize: typography.fontSize.body,
-    color: colors.textBody,
-  },
-  feedAuthor: {
-    fontWeight: typography.fontWeight.semiBold,
+  mediaAuthorName: {
+    fontSize: 14,
+    fontWeight: "600",
     color: colors.primary,
   },
-  feedMeta: {
-    fontSize: typography.fontSize.caption,
+  mediaTimestamp: {
+    fontSize: 11,
     color: colors.textSecondary,
-    marginTop: 2,
   },
-  feedPreview: {
-    fontSize: typography.fontSize.body,
-    color: colors.textBody,
-    lineHeight: typography.lineHeight.normal,
+  mediaImage: {
+    width: Dimensions.get("window").width,
+    aspectRatio: 4 / 3,
+  },
+  mediaVideoPlaceholder: {
+    width: Dimensions.get("window").width,
+    aspectRatio: 16 / 9,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaPlaceholderTitle: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 14,
+    marginTop: 8,
+  },
+  mediaTitleText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.primary,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  mediaDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginTop: 12,
   },
 });
