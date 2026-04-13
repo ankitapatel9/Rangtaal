@@ -330,7 +330,7 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
           <VideoComponent
             source={{ uri: item.storageUrl }}
             style={styles.videoContainer}
-            resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
+            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
             shouldPlay={isVisible}
             isLooping
             isMuted
@@ -682,8 +682,7 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     width: SCREEN_WIDTH,
-    height: 350,
-    backgroundColor: "#000",
+    aspectRatio: 3 / 4,
   },
   videoPlaceholder: {
     backgroundColor: colors.primary,

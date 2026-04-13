@@ -185,7 +185,7 @@ function MediaPost({ item, authorName, onVideoPress }: MediaPostProps) {
           <VideoComponent
             source={{ uri: item.storageUrl }}
             style={styles.mediaVideo}
-            resizeMode={ResizeModeEnum?.CONTAIN ?? "contain"}
+            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
             shouldPlay
             isLooping
             isMuted
@@ -436,8 +436,7 @@ const styles = StyleSheet.create({
   },
   mediaVideo: {
     width: Dimensions.get("window").width,
-    height: 350,
-    backgroundColor: "#000",
+    aspectRatio: 3 / 4,
   },
   mediaVideoPlaceholder: {
     width: Dimensions.get("window").width,
