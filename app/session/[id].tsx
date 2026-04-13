@@ -352,7 +352,7 @@ interface TutorialCardProps {
   userName: string;
 }
 
-function TutorialCard({
+const TutorialCard = React.memo(function TutorialCard({
   tutorial,
   userPaid,
   userId,
@@ -483,7 +483,7 @@ function TutorialCard({
       )}
     </View>
   );
-}
+});
 
 interface TutorialsSectionProps {
   sessionId: string;

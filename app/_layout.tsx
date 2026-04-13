@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../src/hooks/useAuth";
 import { useUser } from "../src/hooks/useUser";
 import { useNotifications } from "../src/hooks/useNotifications";
+import { UserNamesProvider } from "../src/context/UserNamesContext";
 
 export default function RootLayout() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -54,5 +55,9 @@ export default function RootLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <UserNamesProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </UserNamesProvider>
+  );
 }

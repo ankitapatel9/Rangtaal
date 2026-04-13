@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { useUser } from "../../src/hooks/useUser";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
 import { useGalleryFeed } from "../../src/hooks/useGalleryFeed";
-import { useAllUsers } from "../../src/hooks/useAllUsers";
+import { useUserNames } from "../../src/context/UserNamesContext";
 import {
   Avatar,
   AvatarStack,
@@ -143,18 +143,12 @@ export default function AdminHome() {
   const { class_ } = useActiveClass();
   const { sessions } = useSessions(class_?.id);
   const { items: feedItems } = useGalleryFeed();
-  const { users } = useAllUsers();
+  const userNameMap = useUserNames();
 
   const nextSession = getNextSession(sessions);
   const userName = userDoc?.name ?? "Admin";
 
   const userId = authUser?.uid ?? "";
-  const userNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    if (userId && userName) map[userId] = userName;
-    users.forEach((u) => { map[u.uid] = u.name; });
-    return map;
-  }, [users, userId, userName]);
 
   function navigateToSession(id: string) {
     router.push(`/session/${id}` as Parameters<typeof router.push>[0]);

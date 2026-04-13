@@ -21,7 +21,7 @@ import { useRouter } from "expo-router";
 import { useGalleryFeed, GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
 import { useAuth } from "../../src/hooks/useAuth";
 import { useUser } from "../../src/hooks/useUser";
-import { useAllUsers } from "../../src/hooks/useAllUsers";
+import { useUserNames } from "../../src/context/UserNamesContext";
 import { useLikes } from "../../src/hooks/useLikes";
 import { useComments } from "../../src/hooks/useComments";
 import { CommentThread } from "../../src/components/CommentThread";
@@ -251,6 +251,7 @@ interface FeedPostProps {
   isPaid: boolean;
   isAdmin: boolean;
   isLast: boolean;
+  isVisible: boolean;
   onVideoPress?: (item: GalleryFeedItem) => void;
 }
 
@@ -267,7 +268,7 @@ function formatTimeAgo(uploadedAt: number): string {
   return formatTime(uploadedAt).toUpperCase();
 }
 
-function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast, onVideoPress }: FeedPostProps) {
+const FeedPost = React.memo(function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast, isVisible, onVideoPress }: FeedPostProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   const uploaderLabel = userNameMap[item.uploadedBy] ?? "Unknown";
@@ -330,7 +331,7 @@ function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast
             source={{ uri: item.storageUrl }}
             style={styles.media}
             resizeMode={ResizeModeEnum?.COVER ?? "cover"}
-            shouldPlay
+            shouldPlay={isVisible}
             isLooping
             isMuted
           />
@@ -390,7 +391,7 @@ function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast
       {!isLast && <View style={styles.divider} />}
     </View>
   );
-}
+});
 
 // ─── Main Gallery screen ──────────────────────────────────────────────────────
 
@@ -399,20 +400,25 @@ export default function GalleryScreen() {
   const { user: authUser } = useAuth();
   const { user: userDoc } = useUser(authUser?.uid);
   const { items: media, loading } = useGalleryFeed();
-  const { users } = useAllUsers();
+  const userNameMap = useUserNames();
   const [filter, setFilter] = useState<FilterType>("all");
   const [activeVideo, setActiveVideo] = useState<GalleryFeedItem | null>(null);
+  const [visibleIndex, setVisibleIndex] = useState<number>(0);
 
   const userId = authUser?.uid ?? "";
   const displayName = userDoc?.name ?? "Me";
   const isAdmin = userDoc?.role === "admin";
 
-  const userNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    if (userId && displayName) map[userId] = displayName;
-    users.forEach((u) => { map[u.uid] = u.name; });
-    return map;
-  }, [users]);
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+      if (viewableItems.length > 0 && viewableItems[0].index != null) {
+        setVisibleIndex(viewableItems[0].index);
+      }
+    },
+    []
+  );
+
+  const viewabilityConfig = useMemo(() => ({ itemVisiblePercentThreshold: 50 }), []);
 
   const filteredMedia = media.filter((m) => {
     if (filter === "all") return true;
@@ -442,10 +448,11 @@ export default function GalleryScreen() {
         isPaid={isPaid}
         isAdmin={isAdmin}
         isLast={index === filteredMedia.length - 1}
+        isVisible={index === visibleIndex}
         onVideoPress={handleVideoPress}
       />
     ),
-    [userId, displayName, userNameMap, isPaid, isAdmin, filteredMedia.length, handleVideoPress]
+    [userId, displayName, userNameMap, isPaid, isAdmin, filteredMedia.length, visibleIndex, handleVideoPress]
   );
 
   const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
@@ -513,6 +520,12 @@ export default function GalleryScreen() {
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.feedContent}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          initialNumToRender={3}
         />
       )}
 

@@ -77,7 +77,7 @@ export interface CommentThreadProps {
   onReply: (commentId: string, name: string) => void;
 }
 
-export function CommentThread({
+export const CommentThread = React.memo(function CommentThread({
   comment,
   userId,
   onReply,
@@ -104,7 +104,7 @@ export function CommentThread({
       ))}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   thread: {
