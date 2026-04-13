@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import firestore from "@react-native-firebase/firestore";
+import { toEpochMs } from "../lib/formatTime";
 
 export interface GalleryFeedItem {
   id: string;
@@ -44,7 +45,7 @@ export function useGalleryFeed(): GalleryFeedState {
               storageUrl: d.storageUrl ?? "",
               sessionId: d.sessionId ?? "",
               uploadedBy: d.uploadedBy ?? "",
-              uploadedAt: typeof d.uploadedAt === "number" ? d.uploadedAt : Date.now(),
+              uploadedAt: toEpochMs(d.uploadedAt),
             };
           });
           setMediaItems(items);
@@ -70,7 +71,7 @@ export function useGalleryFeed(): GalleryFeedState {
               description: d.description ?? "",
               sessionId: d.sessionId ?? "",
               uploadedBy: d.createdBy ?? "",
-              uploadedAt: typeof d.createdAt === "number" ? d.createdAt : Date.now(),
+              uploadedAt: toEpochMs(d.createdAt),
             };
           });
           setTutorialItems(items);

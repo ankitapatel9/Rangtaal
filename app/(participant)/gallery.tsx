@@ -682,8 +682,7 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     width: SCREEN_WIDTH,
-    aspectRatio: 9 / 16,
-    maxHeight: 500,
+    height: 350,
     backgroundColor: "#000",
   },
   videoPlaceholder: {

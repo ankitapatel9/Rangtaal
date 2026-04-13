@@ -436,8 +436,7 @@ const styles = StyleSheet.create({
   },
   mediaVideo: {
     width: Dimensions.get("window").width,
-    aspectRatio: 9 / 16,
-    maxHeight: 500,
+    height: 350,
     backgroundColor: "#000",
   },
   mediaVideoPlaceholder: {
