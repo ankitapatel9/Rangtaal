@@ -14,4 +14,6 @@ export interface SessionDoc {
     dayBefore: boolean;
     dayOf: boolean;
   };
+  topic: string | null;
+  topicDescription: string | null;
 }

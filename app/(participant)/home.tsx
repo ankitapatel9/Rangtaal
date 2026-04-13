@@ -9,6 +9,8 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Alert,
+  Share,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -17,6 +19,7 @@ import { useUser } from "../../src/hooks/useUser";
 import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
 import { useGalleryFeed } from "../../src/hooks/useGalleryFeed";
+import { useAnnouncements } from "../../src/hooks/useAnnouncements";
 import { useUserNames } from "../../src/context/UserNamesContext";
 import {
   Avatar,
@@ -33,9 +36,10 @@ import { useComments } from "../../src/hooks/useComments";
 import { NotificationBellIcon } from "../../src/components/NotificationBellIcon";
 import { colors } from "../../src/theme/colors";
 import { typography } from "../../src/theme/typography";
-import { spacing } from "../../src/theme/spacing";
+import { spacing, shadows } from "../../src/theme/spacing";
 import { SessionDoc } from "../../src/types/session";
 import { ClassDoc } from "../../src/types/class";
+import { AnnouncementDoc } from "../../src/types/announcement";
 import { formatTimeAgo } from "../../src/lib/formatTime";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -133,6 +137,131 @@ function NoSessionCard() {
         Check back soon — your next Garba session will appear here.
       </Text>
     </Card>
+  );
+}
+
+// ─── Announcement card ───────────────────────────────────────────────────────
+
+interface AnnouncementCardProps {
+  announcement: AnnouncementDoc;
+  authorName: string;
+}
+
+function AnnouncementCard({ announcement, authorName }: AnnouncementCardProps) {
+  const ts = announcement.createdAt
+    ? formatTimeAgo(announcement.createdAt)
+    : "";
+  return (
+    <View style={styles.announcementCard}>
+      <View style={styles.announcementBorder} />
+      <View style={styles.announcementContent}>
+        <View style={styles.announcementHeader}>
+          <Text style={styles.announcementIcon}>📢</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.announcementText}>{announcement.text}</Text>
+            <Text style={styles.announcementMeta}>
+              {authorName}
+              {ts ? `  ·  ${ts}` : ""}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── This Week's Focus card ──────────────────────────────────────────────────
+
+interface FocusCardProps {
+  topic: string;
+  topicDescription: string | null;
+}
+
+function FocusCard({ topic, topicDescription }: FocusCardProps) {
+  return (
+    <View style={styles.focusCard}>
+      <Text style={styles.focusLabel}>THIS WEEK'S FOCUS</Text>
+      <Text style={styles.focusTopic}>{topic}</Text>
+      {topicDescription ? (
+        <Text style={styles.focusDescription}>{topicDescription}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+// ─── Quick Actions row ────────────────────────────────────────────────────────
+
+interface QuickActionTileProps {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  onPress: () => void;
+  highlight?: boolean;
+}
+
+function QuickActionTile({ icon, label, onPress, highlight }: QuickActionTileProps) {
+  return (
+    <TouchableOpacity
+      style={styles.quickTile}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      <Ionicons
+        name={icon}
+        size={26}
+        color={highlight ? colors.orange : colors.primary}
+      />
+      <Text style={[styles.quickTileLabel, highlight && { color: colors.orange }]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+interface QuickActionsProps {
+  isPaid: boolean;
+  isAdmin: boolean;
+  router: ReturnType<typeof useRouter>;
+}
+
+function QuickActions({ isPaid, isAdmin, router }: QuickActionsProps) {
+  function handlePay() {
+    Alert.alert("Payment", "Contact admin to arrange payment.");
+  }
+
+  async function handleInvite() {
+    await Share.share({
+      message:
+        "Join me at Rangtaal — a Garba dance community. Download the app and RSVP for our next session!",
+    });
+  }
+
+  return (
+    <View style={styles.quickActionsRow}>
+      {isAdmin ? (
+        <QuickActionTile
+          icon="card-outline"
+          label="Manage Payments"
+          onPress={() => router.push("/(admin)/finance" as any)}
+        />
+      ) : !isPaid ? (
+        <QuickActionTile
+          icon="card-outline"
+          label="Pay $60"
+          onPress={handlePay}
+          highlight
+        />
+      ) : null}
+      <QuickActionTile
+        icon="camera-outline"
+        label="Add Photo"
+        onPress={() => router.push("/(participant)/capture" as any)}
+      />
+      <QuickActionTile
+        icon="person-add-outline"
+        label="Invite"
+        onPress={handleInvite}
+      />
+    </View>
   );
 }
 
@@ -242,6 +371,7 @@ export default function ParticipantHome() {
   const { class_ } = useActiveClass();
   const { sessions } = useSessions(class_?.id);
   const { items: feedItems } = useGalleryFeed();
+  const { announcements } = useAnnouncements();
   const userNameMap = useUserNames();
 
   const [activeVideo, setActiveVideo] = useState<GalleryFeedItem | null>(null);
@@ -249,6 +379,11 @@ export default function ParticipantHome() {
   const nextSession = getNextSession(sessions);
   const userName = userDoc?.name ?? "You";
   const userId = authUser?.uid ?? "";
+  const isAdmin = userDoc?.role === "admin";
+  const isPaid = userDoc?.paid ?? true;
+
+  // Latest active announcement only
+  const latestAnnouncement = announcements[0] ?? null;
 
   function navigateToSession(id: string) {
     router.push(`/session/${id}` as Parameters<typeof router.push>[0]);
@@ -270,12 +405,12 @@ export default function ParticipantHome() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Payment banner — show when not paid */}
+        {/* 1. Payment banner — show when not paid */}
         {userDoc != null && userDoc.paid === false && (
           <PaymentBanner />
         )}
 
-        {/* Next session hero */}
+        {/* 2. Next session hero */}
         {nextSession != null && class_ != null ? (
           <NextSessionHero
             session={nextSession}
@@ -288,7 +423,26 @@ export default function ParticipantHome() {
           <NoSessionCard />
         )}
 
-        {/* Gallery feed inline */}
+        {/* 3. Announcement card (latest active only) */}
+        {latestAnnouncement != null && (
+          <AnnouncementCard
+            announcement={latestAnnouncement}
+            authorName={userNameMap[latestAnnouncement.createdBy] ?? "Admin"}
+          />
+        )}
+
+        {/* 4. This Week's Focus */}
+        {nextSession?.topic != null && nextSession.topic.length > 0 && (
+          <FocusCard
+            topic={nextSession.topic}
+            topicDescription={nextSession.topicDescription ?? null}
+          />
+        )}
+
+        {/* 5. Quick Actions */}
+        <QuickActions isPaid={isPaid} isAdmin={isAdmin} router={router} />
+
+        {/* 6. Gallery feed inline */}
         {feedItems.length > 0 && feedItems.slice(0, 5).map((item) => (
           <MediaPost
             key={item.id}
@@ -428,6 +582,97 @@ const styles = StyleSheet.create({
   noSessionSub: {
     fontSize: typography.fontSize.body,
     color: colors.textBody,
+    textAlign: "center",
+  },
+
+  // Announcement card
+  announcementCard: {
+    marginHorizontal: spacing.pagePadding,
+    marginBottom: spacing.base,
+    backgroundColor: colors.paymentBannerBg,
+    borderRadius: spacing.cardRadius,
+    flexDirection: "row",
+    overflow: "hidden",
+    ...shadows.card,
+  },
+  announcementBorder: {
+    width: 4,
+    backgroundColor: colors.accent,
+    borderTopLeftRadius: spacing.cardRadius,
+    borderBottomLeftRadius: spacing.cardRadius,
+  },
+  announcementContent: {
+    flex: 1,
+    padding: spacing.cardPadding,
+  },
+  announcementHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+  },
+  announcementIcon: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  announcementText: {
+    fontSize: typography.fontSize.body,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.primary,
+    lineHeight: typography.lineHeight.relaxed,
+    marginBottom: 4,
+  },
+  announcementMeta: {
+    fontSize: typography.fontSize.caption,
+    color: colors.textSecondary,
+  },
+
+  // Focus card
+  focusCard: {
+    marginHorizontal: spacing.pagePadding,
+    marginBottom: spacing.base,
+    backgroundColor: colors.primary,
+    borderRadius: spacing.cardRadiusLg,
+    padding: spacing.cardPaddingLg,
+  },
+  focusLabel: {
+    fontSize: typography.fontSize.label,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.accent,
+    letterSpacing: typography.letterSpacing.labelWide,
+    marginBottom: spacing.sm,
+  },
+  focusTopic: {
+    fontSize: 18,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.card,
+    marginBottom: spacing.xs,
+  },
+  focusDescription: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.70)",
+    lineHeight: typography.lineHeight.relaxed,
+  },
+
+  // Quick Actions
+  quickActionsRow: {
+    flexDirection: "row",
+    marginHorizontal: spacing.pagePadding,
+    marginBottom: spacing.base,
+    gap: spacing.sm,
+  },
+  quickTile: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: spacing.cardRadius,
+    paddingVertical: spacing.base,
+    alignItems: "center",
+    gap: spacing.xs,
+    ...shadows.card,
+  },
+  quickTileLabel: {
+    fontSize: typography.fontSize.caption,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
     textAlign: "center",
   },
 
