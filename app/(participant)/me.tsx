@@ -173,11 +173,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  paymentCardPaid: { borderLeftColor: colors.accent },
+  paymentCardPaid: { borderLeftColor: colors.green },
   paymentTitle: { fontSize: 15, fontWeight: "600", color: colors.primary },
   paymentSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   paymentStatus: { fontSize: 14, fontWeight: "700" },
-  paidText: { color: colors.accent },
+  paidText: { color: colors.green },
   unpaidText: { color: colors.textSecondary },
   menuCard: {
     backgroundColor: colors.card,

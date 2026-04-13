@@ -3,13 +3,20 @@ import { View, Text, StyleSheet } from "react-native";
 import { colors } from "../theme/colors";
 import { typography } from "../theme/typography";
 
-export type AvatarVariant = "plum" | "gold";
+export type AvatarVariant = "plum" | "gold" | "orange" | "green";
+
+const AVATAR_COLORS: string[] = [
+  colors.avatarPlum,
+  colors.avatarGold,
+  colors.avatarOrange,
+  colors.avatarGreen,
+];
 
 export interface AvatarProps {
   name: string;
   size?: number;
   variant?: AvatarVariant;
-  index?: number; // used to alternate colors automatically
+  index?: number;
 }
 
 function getInitials(name: string): string {
@@ -19,14 +26,19 @@ function getInitials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-function getBackgroundColor(variant: AvatarVariant): string {
-  return variant === "gold" ? colors.accent : colors.primary;
+function getBackgroundColor(variant: AvatarVariant | undefined, index: number): string {
+  if (variant === "plum") return colors.avatarPlum;
+  if (variant === "gold") return colors.avatarGold;
+  if (variant === "orange") return colors.avatarOrange;
+  if (variant === "green") return colors.avatarGreen;
+  // Rotate through all four brand colors
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
 }
 
 export function Avatar({ name, size = 36, variant, index = 0 }: AvatarProps) {
-  const resolvedVariant: AvatarVariant =
-    variant ?? (index % 2 === 0 ? "plum" : "gold");
-  const bg = getBackgroundColor(resolvedVariant);
+  // Use name hash for consistent color per person
+  const nameHash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const bg = getBackgroundColor(variant, variant ? index : nameHash);
   const fontSize = Math.floor(size * 0.38);
 
   return (
