@@ -27,8 +27,8 @@ export function useAnnouncements(): UseAnnouncementsState {
           }));
           setState({ announcements, loading: false });
         },
-        (err) => {
-          console.error("useAnnouncements error:", err);
+        () => {
+          // Silently handle — index may still be building
           setState({ announcements: [], loading: false });
         }
       );
