@@ -10,7 +10,7 @@ export default function ParticipantLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.accent,
+        tabBarActiveTintColor: colors.orange,
         tabBarInactiveTintColor: colors.secondary,
         tabBarShowLabel: false,
         tabBarStyle: {

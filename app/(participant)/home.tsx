@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   heroLabel: {
     fontSize: typography.fontSize.label,
     fontWeight: typography.fontWeight.bold,
-    color: colors.accent,
+    color: colors.orange,
     letterSpacing: typography.letterSpacing.labelWide,
     marginBottom: spacing.sm,
   },
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   heroCount: {
     fontSize: 36,
     fontWeight: typography.fontWeight.extraBold,
-    color: colors.accent,
+    color: colors.green,
     lineHeight: 40,
   },
   heroCountLabel: {
