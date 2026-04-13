@@ -1,38 +1,37 @@
-// Rangtaal Brand Palette — Plum & Gold
-// Two brand colors only. Maximum restraint.
+// Rangtaal Brand Palette — Plum & Gold (Vibrant)
 
 export const colors = {
-  // Brand
-  primary: "#2D1B3D",      // Deep Plum — headers, headings, hero backgrounds
-  accent: "#C9963C",       // Saffron Gold — CTAs, buttons, links, highlights
+  // Brand — more vibrant
+  primary: "#1E0A2E",         // Deeper Plum — richer, more contrast
+  accent: "#D4A23C",          // Brighter Gold — more pop on CTAs
 
   // Backgrounds
-  pageBackground: "#FAF7F2", // Warm Ivory — all screen backgrounds
-  card: "#FFFFFF",           // White — floating cards
+  pageBackground: "#FAFAF7",  // Slightly cooler ivory — crisper feel
+  card: "#FFFFFF",            // White — floating cards
 
   // Text
-  textBody: "#5A4B6B",       // Muted Plum — secondary text, descriptions
-  textSecondary: "#9CA3AF",  // Gray — timestamps, meta, placeholders
+  textBody: "#4A3B5E",        // Richer Plum body text
+  textSecondary: "#8B8FA3",   // Slightly warmer gray
 
   // UI
-  border: "#E8E2D9",         // Warm Gray — card borders, dividers, inactive toggle
-  destructive: "#DC2626",    // Red — cancel, delete, errors ONLY
+  border: "#E5E0D8",          // Warm Gray — subtle but defined
+  destructive: "#E53935",     // Brighter red — more noticeable
 
   // Semantic
-  paymentBannerBg: "#FFF8EB",   // Warm yellow for payment due banner
-  cancelledBg: "#FEE2E2",       // Light red for cancelled session banner
+  paymentBannerBg: "#FFF6E0",
+  cancelledBg: "#FFEBEE",
 
-  // Hero gradient stops
-  heroGradientStart: "#2D1B3D",
-  heroGradientEnd: "#3D2B4D",
+  // Hero gradient stops — richer gradient
+  heroGradientStart: "#1E0A2E",
+  heroGradientEnd: "#2D1B3D",
 
-  // Avatar backgrounds (alternating)
-  avatarPlum: "#2D1B3D",
-  avatarGold: "#C9963C",
+  // Avatar backgrounds
+  avatarPlum: "#1E0A2E",
+  avatarGold: "#D4A23C",
 
-  // Aliases for component shorthand
-  secondary: "#9CA3AF",   // = textSecondary
-  body: "#5A4B6B",        // = textBody
+  // Aliases
+  secondary: "#8B8FA3",
+  body: "#4A3B5E",
 } as const;
 
 export type ColorKey = keyof typeof colors;
