@@ -442,16 +442,6 @@ export default function ParticipantHome() {
         {/* 5. Quick Actions */}
         <QuickActions isPaid={isPaid} isAdmin={isAdmin} router={router} />
 
-        {/* 6. Gallery feed inline */}
-        {feedItems.length > 0 && feedItems.slice(0, 5).map((item) => (
-          <MediaPost
-            key={item.id}
-            item={item}
-            authorName={userNameMap[item.uploadedBy] ?? "Someone"}
-            userId={userId}
-            onVideoPress={(v) => setActiveVideo(v)}
-          />
-        ))}
       </ScrollView>
 
       {/* Video player modal */}
