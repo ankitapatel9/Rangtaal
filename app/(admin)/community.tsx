@@ -12,9 +12,7 @@ import { useAllUsers } from "../../src/hooks/useAllUsers";
 import { toggleUserPaid } from "../../src/lib/users";
 import { UserDoc } from "../../src/types/user";
 import { colors } from "../../src/theme/colors";
-
-const INVITE_MESSAGE =
-  "Join our Garba community on Rangtaal! 🪘\n\nDownload the app: https://rangtaal.app";
+import { INVITE_MESSAGE } from "../../src/lib/constants";
 
 async function handleInvite() {
   try {

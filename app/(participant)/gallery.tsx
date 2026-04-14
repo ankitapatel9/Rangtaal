@@ -327,7 +327,22 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
         />
       ) : (
         <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress?.(item)}>
-          {item.thumbnailUrl ? (
+          {item.source === "tutorial" && !isPaid ? (
+            // LOCKED — show thumbnail or placeholder with lock icon; never stream
+            <View style={[styles.videoContainer, !item.thumbnailUrl && styles.videoPlaceholder]}>
+              {item.thumbnailUrl ? (
+                <Image
+                  source={{ uri: item.thumbnailUrl }}
+                  style={[styles.media, StyleSheet.absoluteFillObject as any]}
+                  resizeMode="cover"
+                />
+              ) : null}
+              <View style={styles.lockOverlay}>
+                <Ionicons name="lock-closed" size={32} color="white" />
+                <Text style={styles.lockOverlayText}>Unlock to watch</Text>
+              </View>
+            </View>
+          ) : item.thumbnailUrl ? (
             <View style={styles.videoContainer}>
               <Image
                 source={{ uri: item.thumbnailUrl }}
@@ -337,11 +352,6 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
               <View style={styles.playOverlay}>
                 <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.9)" />
               </View>
-              {item.source === "tutorial" && !isPaid && (
-                <View style={styles.lockOverlay}>
-                  <Ionicons name="lock-closed" size={28} color="white" />
-                </View>
-              )}
             </View>
           ) : VideoComponent ? (
             <VideoComponent
@@ -355,18 +365,11 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
           ) : (
             <View style={[styles.videoContainer, styles.videoPlaceholder]}>
               <View style={styles.playCircle}>
-                <Ionicons
-                  name={item.source === "tutorial" && !isPaid ? "lock-closed" : "play"}
-                  size={32}
-                  color="white"
-                />
+                <Ionicons name="play" size={32} color="white" />
               </View>
               {item.title ? (
                 <Text style={styles.videoPlaceholderTitle}>{item.title}</Text>
               ) : null}
-              {item.source === "tutorial" && !isPaid && (
-                <Text style={styles.videoPlaceholderTitle}>Locked — Contact admin</Text>
-              )}
             </View>
           )}
         </TouchableOpacity>
@@ -722,9 +725,15 @@ const styles = StyleSheet.create({
   },
   lockOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  lockOverlayText: {
+    color: "white",
+    marginTop: 8,
+    fontWeight: "600",
+    fontSize: 14,
   },
 
   // Post footer

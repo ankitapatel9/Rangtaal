@@ -12,6 +12,7 @@ import {
   Alert,
   Share,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../src/hooks/useAuth";
@@ -45,6 +46,32 @@ import {
   createAnnouncement,
   dismissAnnouncement,
 } from "../../src/lib/announcements";
+import { INVITE_MESSAGE } from "../../src/lib/constants";
+import { createMedia } from "../../src/lib/media";
+
+let storageModule: any = null;
+try { storageModule = require("@react-native-firebase/storage").default; } catch {}
+
+let manipulateAsync: any = null;
+let SaveFormat: any = null;
+try {
+  const m = require("expo-image-manipulator");
+  manipulateAsync = m.manipulateAsync;
+  SaveFormat = m.SaveFormat;
+} catch {}
+
+let VideoThumbnailsHome: any = null;
+try { VideoThumbnailsHome = require("expo-video-thumbnails"); } catch {}
+
+async function generateThumbnailHome(videoUri: string): Promise<string | null> {
+  if (!VideoThumbnailsHome) return null;
+  try {
+    const { uri } = await VideoThumbnailsHome.getThumbnailAsync(videoUri, { time: 1000 });
+    return uri;
+  } catch {
+    return null;
+  }
+}
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -80,18 +107,19 @@ interface HeroCardProps {
   class_: ClassDoc;
   userName: string;
   userId: string;
+  userNameMap: Record<string, string>;
   onPress: () => void;
 }
 
-function NextSessionHero({ session, class_, userName, userId, onPress }: HeroCardProps) {
+function NextSessionHero({ session, class_, userName, userId, userNameMap, onPress }: HeroCardProps) {
   const dayLabel = formatDayLabel(session.date);
   const dateStr = formatDate(session.date);
   const timeStr = formatTimeRange(class_);
   const rsvpCount = session.rsvps.length;
   const isRsvpd = session.rsvps.includes(userId);
 
-  // Build avatar names from rsvp UIDs — in MVP we only have the current user's name
-  const rsvpNames = isRsvpd ? [userName] : [];
+  // Build avatar names from rsvp UIDs using the real name map
+  const rsvpNames = session.rsvps.map((uid) => userNameMap[uid] ?? "User");
 
   return (
     <TouchableOpacity
@@ -252,40 +280,93 @@ interface QuickActionsProps {
   isPaid: boolean;
   isAdmin: boolean;
   router: ReturnType<typeof useRouter>;
+  nearestSessionId: string | null;
+  userId: string;
 }
 
-function QuickActions({ isPaid, isAdmin, router }: QuickActionsProps) {
-  function handlePay() {
-    Alert.alert("Payment", "Contact admin to arrange payment.");
+function QuickActions({ isPaid, isAdmin, router, nearestSessionId, userId }: QuickActionsProps) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handleAddPhoto() {
+    if (!nearestSessionId) {
+      Alert.alert("No Sessions", "No sessions available to attach media to.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+      quality: 1,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+
+    const asset = result.assets[0];
+    const type = asset.type === "video" ? "video" as const : "photo" as const;
+
+    setUploading(true);
+    try {
+      let uri = asset.uri;
+
+      if (type === "photo" && manipulateAsync && SaveFormat) {
+        const compressed = await manipulateAsync(
+          uri,
+          [{ resize: { width: 1080 } }],
+          { compress: 0.8, format: SaveFormat.JPEG }
+        );
+        uri = compressed.uri;
+      }
+
+      if (storageModule) {
+        const timestamp = Date.now();
+        const ext = type === "photo" ? "jpg" : "mp4";
+        const filename = `${timestamp}.${ext}`;
+        const storagePath = `sessions/${nearestSessionId}/media/${filename}`;
+        await storageModule().ref(storagePath).putFile(uri);
+        const downloadUrl = await storageModule().ref(storagePath).getDownloadURL();
+
+        let thumbnailUrl: string | null = null;
+        if (type === "video") {
+          const thumbLocalUri = await generateThumbnailHome(uri);
+          if (thumbLocalUri && storageModule) {
+            const thumbPath = `thumbnails/${timestamp}_thumb.jpg`;
+            await storageModule().ref(thumbPath).putFile(thumbLocalUri);
+            thumbnailUrl = await storageModule().ref(thumbPath).getDownloadURL();
+          }
+        }
+
+        await createMedia({
+          sessionId: nearestSessionId,
+          type,
+          storageUrl: downloadUrl,
+          thumbnailUrl,
+          uploadedBy: userId,
+        });
+      } else {
+        await createMedia({
+          sessionId: nearestSessionId,
+          type,
+          storageUrl: uri,
+          uploadedBy: userId,
+        });
+      }
+
+      Alert.alert("Uploaded!", `${type === "photo" ? "Photo" : "Video"} added to gallery.`);
+    } catch {
+      Alert.alert("Upload failed", "Please try again.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleInvite() {
-    await Share.share({
-      message:
-        "Join me at Rangtaal — a Garba dance community. Download the app and RSVP for our next session!",
-    });
+    await Share.share({ message: INVITE_MESSAGE });
   }
 
   return (
     <View style={styles.quickActionsRow}>
-      {isAdmin ? (
-        <QuickActionTile
-          icon="card-outline"
-          label="Manage Payments"
-          onPress={() => router.push("/(admin)/finance" as any)}
-        />
-      ) : !isPaid ? (
-        <QuickActionTile
-          icon="card-outline"
-          label="Pay $60"
-          onPress={handlePay}
-          highlight
-        />
-      ) : null}
       <QuickActionTile
-        icon="camera-outline"
-        label="Add Photo"
-        onPress={() => router.push("/(participant)/capture" as any)}
+        icon={uploading ? "hourglass-outline" : "camera-outline"}
+        label={uploading ? "Uploading…" : "Add Photo"}
+        onPress={handleAddPhoto}
       />
       <QuickActionTile
         icon="person-add-outline"
@@ -427,6 +508,15 @@ export default function ParticipantHome() {
   const isAdmin = userDoc?.role === "admin";
   const isPaid = userDoc?.paid ?? true;
 
+  // Find nearest session (by absolute time distance) for upload attachment
+  const now2 = Date.now();
+  const sorted2 = [...sessions].sort(
+    (a, b) =>
+      Math.abs(new Date(a.date).getTime() - now2) -
+      Math.abs(new Date(b.date).getTime() - now2)
+  );
+  const nearestSessionId = sorted2[0]?.id ?? null;
+
   // Latest active announcement only
   const latestAnnouncement = announcements[0] ?? null;
 
@@ -450,8 +540,8 @@ export default function ParticipantHome() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Payment banner — show when not paid */}
-        {userDoc != null && userDoc.paid === false && (
+        {/* 1. Payment banner — show when not paid and not admin */}
+        {userDoc != null && userDoc.paid === false && userDoc.role !== "admin" && (
           <PaymentBanner />
         )}
 
@@ -462,6 +552,7 @@ export default function ParticipantHome() {
             class_={class_}
             userName={userName}
             userId={userId}
+            userNameMap={userNameMap}
             onPress={() => navigateToSession(nextSession.id)}
           />
         ) : (
@@ -517,7 +608,13 @@ export default function ParticipantHome() {
         )}
 
         {/* 5. Quick Actions */}
-        <QuickActions isPaid={isPaid} isAdmin={isAdmin} router={router} />
+        <QuickActions
+          isPaid={isPaid}
+          isAdmin={isAdmin}
+          router={router}
+          nearestSessionId={nearestSessionId}
+          userId={userId}
+        />
 
       </ScrollView>
 
