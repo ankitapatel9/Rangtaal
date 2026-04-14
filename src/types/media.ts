@@ -4,6 +4,7 @@ export interface MediaDoc {
   type: "photo" | "video";
   title: string;
   storageUrl: string;
+  originalUrl: string | null;
   thumbnailUrl: string | null;
   uploadedBy: string;
   uploadedAt: number;

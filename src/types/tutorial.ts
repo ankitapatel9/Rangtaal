@@ -4,6 +4,7 @@ export interface TutorialDoc {
   title: string;
   description: string;
   videoUrl: string;
+  originalUrl: string | null;
   thumbnailUrl: string | null;
   createdAt: number;
   createdBy: string;
