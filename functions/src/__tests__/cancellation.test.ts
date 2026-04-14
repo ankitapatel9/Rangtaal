@@ -2,14 +2,21 @@
 const mockSend = jest.fn().mockResolvedValue("message-id");
 const mockMessaging = jest.fn(() => ({ send: mockSend }));
 const mockUpdate = jest.fn().mockResolvedValue(undefined);
+const mockAdd = jest.fn().mockResolvedValue({ id: "notif-id" });
 const mockDocRef = jest.fn(() => ({ update: mockUpdate }));
 const mockCollection = jest.fn();
 
-jest.mock("firebase-admin", () => ({
-  initializeApp: jest.fn(),
-  messaging: mockMessaging,
-  firestore: jest.fn(() => ({ collection: mockCollection })),
-}));
+const mockServerTimestamp = jest.fn(() => ({ _methodName: "FieldValue.serverTimestamp" }));
+
+jest.mock("firebase-admin", () => {
+  const firestoreFn = jest.fn(() => ({ collection: mockCollection }));
+  (firestoreFn as any).FieldValue = { serverTimestamp: mockServerTimestamp };
+  return {
+    initializeApp: jest.fn(),
+    messaging: mockMessaging,
+    firestore: firestoreFn,
+  };
+});
 
 // Mock firebase-functions/v2/firestore so onDocumentUpdated is a passthrough
 jest.mock("firebase-functions/v2/firestore", () => ({
@@ -42,6 +49,7 @@ describe("handleSessionCancelled", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSend.mockResolvedValue("message-id");
+    mockAdd.mockResolvedValue({ id: "notif-id" });
   });
 
   it("does nothing when session was not previously upcoming", async () => {
@@ -98,6 +106,9 @@ describe("handleSessionCancelled", () => {
           doc: mockDocRef,
         };
       }
+      if (name === "notifications") {
+        return { add: mockAdd };
+      }
       return { doc: mockDocRef };
     });
 
@@ -141,6 +152,9 @@ describe("handleSessionCancelled", () => {
           doc: mockDocRef,
         };
       }
+      if (name === "notifications") {
+        return { add: mockAdd };
+      }
       return { doc: mockDocRef };
     });
 
@@ -176,6 +190,9 @@ describe("handleSessionCancelled", () => {
           get: jest.fn().mockResolvedValue(makeSnapshot([nonRsvpUser])),
           doc: mockDocRef,
         };
+      }
+      if (name === "notifications") {
+        return { add: mockAdd };
       }
       return { doc: mockDocRef };
     });

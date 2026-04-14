@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { sendSms } from "./sms";
+import { createNotificationDoc } from "./notify";
 
 type ReminderType = "dayBefore" | "dayOf";
 
@@ -66,6 +67,16 @@ export async function processReminders(type: ReminderType): Promise<void> {
         ? `Reminder: you're signed up for Garba ${timeLabel} at ${session.time} at ${session.location}`
         : `${timeLabel === "tomorrow" ? "Tomorrow's" : "Tonight's"} Garba session is at ${session.time} — RSVP if you're coming!`;
 
+      // Create in-app notification doc
+      await createNotificationDoc({
+        userId: user.uid,
+        type: "session_reminder",
+        title: "Rangtaal",
+        body: message,
+        route: "/",
+      });
+
+      // Send push or SMS
       if (user.fcmToken) {
         await admin.messaging().send({
           token: user.fcmToken,

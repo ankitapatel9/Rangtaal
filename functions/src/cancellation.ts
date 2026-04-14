@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { sendSms } from "./sms";
+import { createNotificationDoc } from "./notify";
 
 interface SessionData {
   status: string;
@@ -42,6 +43,16 @@ export async function handleSessionCancelled(event: CancellationEvent): Promise<
     const user = userDoc.data() as UserData;
     if (!rsvpSet.has(user.uid)) continue;
 
+    // Create in-app notification doc
+    await createNotificationDoc({
+      userId: user.uid,
+      type: "session_cancelled",
+      title: "Garba Session Cancelled",
+      body: message,
+      route: "/",
+    });
+
+    // Send push or SMS
     if (user.fcmToken) {
       await admin.messaging().send({
         token: user.fcmToken,

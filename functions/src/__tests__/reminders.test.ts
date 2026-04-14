@@ -3,18 +3,23 @@ const mockSend = jest.fn().mockResolvedValue("message-id");
 const mockMessaging = jest.fn(() => ({ send: mockSend }));
 
 const mockUpdate = jest.fn().mockResolvedValue(undefined);
-const mockGet = jest.fn();
+const mockAdd = jest.fn().mockResolvedValue({ id: "notif-id" });
 const mockDocRef = jest.fn(() => ({ update: mockUpdate }));
-const mockCollectionGet = jest.fn();
 
 // We'll configure per-collection mocking in beforeEach
 const mockCollection = jest.fn();
 
-jest.mock("firebase-admin", () => ({
-  initializeApp: jest.fn(),
-  messaging: mockMessaging,
-  firestore: jest.fn(() => ({ collection: mockCollection })),
-}));
+const mockServerTimestamp = jest.fn(() => ({ _methodName: "FieldValue.serverTimestamp" }));
+
+jest.mock("firebase-admin", () => {
+  const firestoreFn = jest.fn(() => ({ collection: mockCollection }));
+  (firestoreFn as any).FieldValue = { serverTimestamp: mockServerTimestamp };
+  return {
+    initializeApp: jest.fn(),
+    messaging: mockMessaging,
+    firestore: firestoreFn,
+  };
+});
 
 // Mock firebase-functions/v2/scheduler so onSchedule just calls through
 jest.mock("firebase-functions/v2/scheduler", () => ({
@@ -37,6 +42,7 @@ describe("processReminders", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUpdate.mockResolvedValue(undefined);
+    mockAdd.mockResolvedValue({ id: "notif-id" });
     mockSend.mockResolvedValue("message-id");
   });
 
@@ -70,7 +76,7 @@ describe("processReminders", () => {
         return {
           where: jest.fn().mockReturnThis(),
           get: jest.fn().mockResolvedValue(makeSnapshot([sessionDoc])),
-          doc: mockDocRef,
+          doc: (id: string) => ({ update: mockUpdate }),
         };
       }
       if (name === "users") {
@@ -78,6 +84,9 @@ describe("processReminders", () => {
           get: jest.fn().mockResolvedValue(makeSnapshot([userDoc])),
           doc: mockDocRef,
         };
+      }
+      if (name === "notifications") {
+        return { add: mockAdd };
       }
       return { doc: mockDocRef };
     });
@@ -126,7 +135,7 @@ describe("processReminders", () => {
         return {
           where: jest.fn().mockReturnThis(),
           get: jest.fn().mockResolvedValue(makeSnapshot([sessionDoc])),
-          doc: mockDocRef,
+          doc: (id: string) => ({ update: mockUpdate }),
         };
       }
       if (name === "users") {
@@ -134,6 +143,9 @@ describe("processReminders", () => {
           get: jest.fn().mockResolvedValue(makeSnapshot([userDoc])),
           doc: mockDocRef,
         };
+      }
+      if (name === "notifications") {
+        return { add: mockAdd };
       }
       return { doc: mockDocRef };
     });
@@ -186,7 +198,7 @@ describe("processReminders", () => {
         return {
           where: jest.fn().mockReturnThis(),
           get: jest.fn().mockResolvedValue(makeSnapshot([sessionDoc])),
-          doc: mockDocRef,
+          doc: (id: string) => ({ update: mockUpdate }),
         };
       }
       if (name === "users") {
@@ -194,6 +206,9 @@ describe("processReminders", () => {
           get: jest.fn().mockResolvedValue(makeSnapshot([userDoc])),
           doc: mockDocRef,
         };
+      }
+      if (name === "notifications") {
+        return { add: mockAdd };
       }
       return { doc: mockDocRef };
     });

@@ -5,6 +5,7 @@ import { useAuth } from "../src/hooks/useAuth";
 import { useUser } from "../src/hooks/useUser";
 import { useNotifications } from "../src/hooks/useNotifications";
 import { UserNamesProvider } from "../src/context/UserNamesContext";
+import messaging from "@react-native-firebase/messaging";
 
 export default function RootLayout() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -14,6 +15,39 @@ export default function RootLayout() {
   const router = useRouter();
 
   const loading = authLoading || (!!authUser && userLoading);
+
+  // Handle push notification deep links
+  useEffect(() => {
+    // App opened from a quit state via notification
+    const handleInitial = async () => {
+      try {
+        const notification = await messaging().getInitialNotification();
+        const route = notification?.data?.route as string | undefined;
+        if (route) {
+          router.push(route as any);
+        }
+      } catch {
+        // messaging not available in development without entitlement
+      }
+    };
+
+    handleInitial();
+
+    // App in background, brought to foreground via notification
+    let unsubOpened: (() => void) | undefined;
+    try {
+      unsubOpened = messaging().onNotificationOpenedApp((notification) => {
+        const route = notification?.data?.route as string | undefined;
+        if (route) {
+          router.push(route as any);
+        }
+      });
+    } catch {
+      // messaging not available in development without entitlement
+    }
+
+    return () => unsubOpened?.();
+  }, [router]);
 
   useEffect(() => {
     if (loading) return;
