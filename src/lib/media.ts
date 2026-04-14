@@ -22,6 +22,7 @@ export async function createMedia(input: CreateMediaInput & { title?: string }):
     type: input.type,
     title: autoTitle,
     storageUrl: input.storageUrl,
+    thumbnailUrl: input.thumbnailUrl ?? null,
     uploadedBy: input.uploadedBy,
     uploadedAt: firestore.FieldValue.serverTimestamp(),
     comments: null,

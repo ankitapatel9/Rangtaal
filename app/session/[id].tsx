@@ -59,6 +59,19 @@ try { storage = require("@react-native-firebase/storage").default; } catch {}
 let ImagePicker: any = null;
 try { ImagePicker = require("expo-image-picker"); } catch {}
 
+let VideoThumbnails: any = null;
+try { VideoThumbnails = require("expo-video-thumbnails"); } catch {}
+
+async function generateThumbnail(videoUri: string): Promise<string | null> {
+  if (!VideoThumbnails) return null;
+  try {
+    const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, { time: 1000 });
+    return uri;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -577,15 +590,43 @@ function TutorialsSection({
 
     setUploading(true);
     try {
-      const url = await pickAndUploadMedia(sessionId, userId, "video");
-      if (!url) return;
+      // Pick and get local asset URI for thumbnail generation before upload
+      if (!ImagePicker) return;
+      const perms = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perms.granted) {
+        Alert.alert("Permission required", "Please allow photo library access.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        quality: 0.85,
+        allowsEditing: false,
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const asset = result.assets[0];
+      const ext = asset.uri.split(".").pop() ?? "mp4";
+      const timestamp = Date.now();
+      const videoPath = `sessions/${sessionId}/video/${timestamp}.${ext}`;
+      const videoRef = storage().ref(videoPath);
+      await videoRef.putFile(asset.uri);
+      const url = await videoRef.getDownloadURL();
+
+      // Generate and upload thumbnail
+      let thumbnailUrl: string | null = null;
+      const thumbLocalUri = await generateThumbnail(asset.uri);
+      if (thumbLocalUri) {
+        const thumbPath = `thumbnails/${timestamp}_thumb.jpg`;
+        await storage().ref(thumbPath).putFile(thumbLocalUri);
+        thumbnailUrl = await storage().ref(thumbPath).getDownloadURL();
+      }
 
       await createTutorial({
         sessionId,
         title: `Tutorial ${tutorials.length + 1}`,
         description: "",
         videoUrl: url,
-        thumbnailUrl: null,
+        thumbnailUrl,
         createdBy: userId,
         order: tutorials.length,
       });
@@ -765,15 +806,28 @@ function GallerySection({
       const asset = result.assets[0];
       const isVideo = asset.type === "video";
       const ext = asset.uri.split(".").pop() ?? (isVideo ? "mp4" : "jpg");
-      const path = `sessions/${sessionId}/gallery/${Date.now()}.${ext}`;
+      const timestamp = Date.now();
+      const path = `sessions/${sessionId}/gallery/${timestamp}.${ext}`;
       const ref = storage().ref(path);
       await ref.putFile(asset.uri);
       const url = await ref.getDownloadURL();
+
+      // Generate and upload thumbnail for videos
+      let thumbnailUrl: string | null = null;
+      if (isVideo) {
+        const thumbLocalUri = await generateThumbnail(asset.uri);
+        if (thumbLocalUri) {
+          const thumbPath = `thumbnails/${timestamp}_thumb.jpg`;
+          await storage().ref(thumbPath).putFile(thumbLocalUri);
+          thumbnailUrl = await storage().ref(thumbPath).getDownloadURL();
+        }
+      }
 
       await createMedia({
         sessionId,
         type: isVideo ? "video" : "photo",
         storageUrl: url,
+        thumbnailUrl,
         uploadedBy: userId,
       });
     } catch (err: any) {

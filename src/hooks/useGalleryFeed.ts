@@ -7,6 +7,7 @@ export interface GalleryFeedItem {
   type: "photo" | "video";
   source: "media" | "tutorial";
   storageUrl: string;
+  thumbnailUrl?: string | null;
   title?: string;
   description?: string;
   sessionId: string;
@@ -43,6 +44,7 @@ export function useGalleryFeed(): GalleryFeedState {
               type: d.type ?? "photo",
               source: "media" as const,
               storageUrl: d.storageUrl ?? "",
+              thumbnailUrl: d.thumbnailUrl ?? null,
               sessionId: d.sessionId ?? "",
               uploadedBy: d.uploadedBy ?? "",
               uploadedAt: toEpochMs(d.uploadedAt),
@@ -67,6 +69,7 @@ export function useGalleryFeed(): GalleryFeedState {
               type: "video" as const,
               source: "tutorial" as const,
               storageUrl: d.videoUrl ?? "",
+              thumbnailUrl: d.thumbnailUrl ?? null,
               title: d.title ?? "",
               description: d.description ?? "",
               sessionId: d.sessionId ?? "",

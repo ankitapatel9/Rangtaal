@@ -325,38 +325,50 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
           style={styles.media}
           resizeMode="cover"
         />
-      ) : VideoComponent ? (
-        <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress?.(item)}>
-          <VideoComponent
-            source={{ uri: item.storageUrl }}
-            style={styles.videoContainer}
-            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
-            shouldPlay={isVisible}
-            isLooping
-            isMuted
-          />
-        </TouchableOpacity>
       ) : (
-        <TouchableOpacity
-          style={styles.videoContainer}
-          activeOpacity={0.85}
-          onPress={() => onVideoPress?.(item)}
-        >
-          <View style={[styles.media, styles.videoPlaceholder]}>
-            <View style={styles.playCircle}>
-              <Ionicons
-                name={item.source === "tutorial" && !isPaid ? "lock-closed" : "play"}
-                size={32}
-                color="white"
+        <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress?.(item)}>
+          {item.thumbnailUrl ? (
+            <View style={styles.videoContainer}>
+              <Image
+                source={{ uri: item.thumbnailUrl }}
+                style={styles.media}
+                resizeMode="cover"
               />
+              <View style={styles.playOverlay}>
+                <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.9)" />
+              </View>
+              {item.source === "tutorial" && !isPaid && (
+                <View style={styles.lockOverlay}>
+                  <Ionicons name="lock-closed" size={28} color="white" />
+                </View>
+              )}
             </View>
-            {item.title ? (
-              <Text style={styles.videoPlaceholderTitle}>{item.title}</Text>
-            ) : null}
-            {item.source === "tutorial" && !isPaid && (
-              <Text style={styles.videoPlaceholderTitle}>Locked — Contact admin</Text>
-            )}
-          </View>
+          ) : VideoComponent ? (
+            <VideoComponent
+              source={{ uri: item.storageUrl }}
+              style={styles.videoContainer}
+              resizeMode={ResizeModeEnum?.COVER ?? "cover"}
+              shouldPlay={isVisible}
+              isLooping
+              isMuted
+            />
+          ) : (
+            <View style={[styles.videoContainer, styles.videoPlaceholder]}>
+              <View style={styles.playCircle}>
+                <Ionicons
+                  name={item.source === "tutorial" && !isPaid ? "lock-closed" : "play"}
+                  size={32}
+                  color="white"
+                />
+              </View>
+              {item.title ? (
+                <Text style={styles.videoPlaceholderTitle}>{item.title}</Text>
+              ) : null}
+              {item.source === "tutorial" && !isPaid && (
+                <Text style={styles.videoPlaceholderTitle}>Locked — Contact admin</Text>
+              )}
+            </View>
+          )}
         </TouchableOpacity>
       )}
 
@@ -700,6 +712,17 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
     justifyContent: "center",
   },

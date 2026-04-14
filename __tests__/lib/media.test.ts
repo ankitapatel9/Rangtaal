@@ -63,6 +63,7 @@ describe("createMedia", () => {
       type: "photo",
       title: expect.stringContaining("user1_s1_"),
       storageUrl: "https://example.com/photo.jpg",
+      thumbnailUrl: null,
       uploadedBy: "user1",
       uploadedAt: "SERVER_TIMESTAMP",
       comments: null,

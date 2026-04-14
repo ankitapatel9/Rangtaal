@@ -20,6 +20,19 @@ try {
   SaveFormat = m.SaveFormat;
 } catch {}
 
+let VideoThumbnails: any = null;
+try { VideoThumbnails = require("expo-video-thumbnails"); } catch {}
+
+async function generateThumbnail(videoUri: string): Promise<string | null> {
+  if (!VideoThumbnails) return null;
+  try {
+    const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, { time: 1000 });
+    return uri;
+  } catch {
+    return null;
+  }
+}
+
 export default function CaptureTab() {
   const router = useRouter();
   const { user: authUser } = useAuth();
@@ -75,10 +88,23 @@ export default function CaptureTab() {
         const storagePath = `sessions/${nearest.id}/media/${filename}`;
         await storage().ref(storagePath).putFile(uri);
         const downloadUrl = await storage().ref(storagePath).getDownloadURL();
+
+        // Generate and upload thumbnail for videos
+        let thumbnailUrl: string | null = null;
+        if (type === "video") {
+          const thumbLocalUri = await generateThumbnail(uri);
+          if (thumbLocalUri && storage) {
+            const thumbPath = `thumbnails/${timestamp}_thumb.jpg`;
+            await storage().ref(thumbPath).putFile(thumbLocalUri);
+            thumbnailUrl = await storage().ref(thumbPath).getDownloadURL();
+          }
+        }
+
         await createMedia({
           sessionId: nearest.id,
           type,
           storageUrl: downloadUrl,
+          thumbnailUrl,
           uploadedBy: authUser.uid,
         });
       } else {

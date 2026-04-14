@@ -4,6 +4,7 @@ export interface MediaDoc {
   type: "photo" | "video";
   title: string;
   storageUrl: string;
+  thumbnailUrl: string | null;
   uploadedBy: string;
   uploadedAt: number;
   comments: null;
@@ -15,5 +16,6 @@ export interface CreateMediaInput {
   sessionId: string;
   type: "photo" | "video";
   storageUrl: string;
+  thumbnailUrl?: string | null;
   uploadedBy: string;
 }

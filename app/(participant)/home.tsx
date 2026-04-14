@@ -365,22 +365,36 @@ function MediaPost({ item, authorName, userId, onVideoPress }: MediaPostProps) {
           resizeMode="cover"
           onLoad={() => setMediaLoading(false)}
         />
-      ) : VideoComponent ? (
-        <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress(item)}>
-          <VideoComponent
-            source={{ uri: item.storageUrl }}
-            style={styles.mediaVideo}
-            resizeMode={ResizeModeEnum?.COVER ?? "cover"}
-            shouldPlay
-            isLooping
-            isMuted
-            onLoad={() => setMediaLoading(false)}
-            progressUpdateIntervalMillis={500}
-          />
-        </TouchableOpacity>
       ) : (
-        <TouchableOpacity activeOpacity={0.85} onPress={() => onVideoPress(item)} style={styles.mediaVideoPlaceholder}>
-          <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.8)" />
+        <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress(item)}>
+          {item.thumbnailUrl ? (
+            <View style={styles.mediaVideo}>
+              <Image
+                source={{ uri: item.thumbnailUrl }}
+                style={[styles.mediaVideo, { position: "absolute" }]}
+                resizeMode="cover"
+                onLoad={() => setMediaLoading(false)}
+              />
+              <View style={styles.mediaVideoPlayOverlay}>
+                <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.9)" />
+              </View>
+            </View>
+          ) : VideoComponent ? (
+            <VideoComponent
+              source={{ uri: item.storageUrl }}
+              style={styles.mediaVideo}
+              resizeMode={ResizeModeEnum?.COVER ?? "cover"}
+              shouldPlay
+              isLooping
+              isMuted
+              onLoad={() => setMediaLoading(false)}
+              progressUpdateIntervalMillis={500}
+            />
+          ) : (
+            <View style={styles.mediaVideoPlaceholder}>
+              <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.8)" />
+            </View>
+          )}
         </TouchableOpacity>
       )}
 
@@ -794,6 +808,11 @@ const styles = StyleSheet.create({
     width: Dimensions.get("window").width,
     aspectRatio: 16 / 9,
     backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaVideoPlayOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
   },

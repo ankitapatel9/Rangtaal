@@ -37,6 +37,19 @@ try {
   storage = require("@react-native-firebase/storage").default;
 } catch {}
 
+let VideoThumbnails: any = null;
+try { VideoThumbnails = require("expo-video-thumbnails"); } catch {}
+
+async function generateThumbnail(videoUri: string): Promise<string | null> {
+  if (!VideoThumbnails) return null;
+  try {
+    const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, { time: 1000 });
+    return uri;
+  } catch {
+    return null;
+  }
+}
+
 type CaptureMode = "photo" | "video";
 
 export default function CameraScreen() {
@@ -119,10 +132,23 @@ export default function CameraScreen() {
       if (storage) {
         await storage().ref(storagePath).putFile(uri);
         const downloadUrl = await storage().ref(storagePath).getDownloadURL();
+
+        // Generate and upload thumbnail for videos
+        let thumbnailUrl: string | null = null;
+        if (type === "video") {
+          const thumbLocalUri = await generateThumbnail(uri);
+          if (thumbLocalUri) {
+            const thumbPath = `thumbnails/${timestamp}_thumb.jpg`;
+            await storage().ref(thumbPath).putFile(thumbLocalUri);
+            thumbnailUrl = await storage().ref(thumbPath).getDownloadURL();
+          }
+        }
+
         await createMedia({
           sessionId,
           type,
           storageUrl: downloadUrl,
+          thumbnailUrl,
           uploadedBy: authUser.uid,
         });
       } else {
