@@ -90,6 +90,7 @@ module.exports = () => ({
       },
     ],
     "@react-native-firebase/app",
+    "./plugins/withFmtFix",
   ],
   extra: {
     router: {},
