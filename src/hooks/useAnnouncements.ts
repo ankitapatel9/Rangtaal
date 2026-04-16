@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import firestore from "@react-native-firebase/firestore";
 import { AnnouncementDoc } from "../types/announcement";
+import { toEpochMs } from "../lib/formatTime";
 
 export interface UseAnnouncementsState {
   announcements: AnnouncementDoc[];
@@ -14,21 +15,24 @@ export function useAnnouncements(): UseAnnouncementsState {
   });
 
   useEffect(() => {
+    // Query all announcements and filter/sort client-side
+    // Avoids the composite index requirement (active + createdAt)
     const unsub = firestore()
       .collection("announcements")
-      .where("active", "==", true)
-      .orderBy("createdAt", "desc")
       .onSnapshot(
         (snap) => {
           if (!snap) return;
-          const announcements = snap.docs.map((d) => ({
+          const all = snap.docs.map((d) => ({
             ...(d.data() as Omit<AnnouncementDoc, "id">),
             id: d.id,
           }));
-          setState({ announcements, loading: false });
+          // Filter active and sort newest first
+          const active = all
+            .filter((a) => a.active)
+            .sort((a, b) => toEpochMs(b.createdAt) - toEpochMs(a.createdAt));
+          setState({ announcements: active, loading: false });
         },
         () => {
-          // Silently handle — index may still be building
           setState({ announcements: [], loading: false });
         }
       );

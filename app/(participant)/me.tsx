@@ -104,15 +104,6 @@ export default function ParticipantMe() {
           />
           <View style={styles.menuDivider} />
           <SettingsRow
-            icon="images-outline"
-            label="My Uploads"
-            onPress={() => {
-              const isAdmin = userDoc?.role === "admin";
-              router.push(isAdmin ? "/(admin)/gallery" : "/(participant)/gallery" as any);
-            }}
-          />
-          <View style={styles.menuDivider} />
-          <SettingsRow
             icon="help-circle-outline"
             label="Help & Support"
             onPress={() =>
