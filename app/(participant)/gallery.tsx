@@ -248,7 +248,6 @@ interface FeedPostProps {
   userId: string;
   userName: string;
   userNameMap: Record<string, string>;
-  isPaid: boolean;
   isAdmin: boolean;
   isLast: boolean;
   isVisible: boolean;
@@ -268,7 +267,7 @@ function formatTimeAgo(uploadedAt: number): string {
   return formatTime(uploadedAt).toUpperCase();
 }
 
-const FeedPost = React.memo(function FeedPost({ item, userId, userName, userNameMap, isPaid, isAdmin, isLast, isVisible, onVideoPress }: FeedPostProps) {
+const FeedPost = React.memo(function FeedPost({ item, userId, userName, userNameMap, isAdmin, isLast, isVisible, onVideoPress }: FeedPostProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   const uploaderLabel = userNameMap[item.uploadedBy] ?? "Unknown";
@@ -327,22 +326,7 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
         />
       ) : (
         <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress?.(item)}>
-          {item.source === "tutorial" && !isPaid ? (
-            // LOCKED — show thumbnail or placeholder with lock icon; never stream
-            <View style={[styles.videoContainer, !item.thumbnailUrl && styles.videoPlaceholder]}>
-              {item.thumbnailUrl ? (
-                <Image
-                  source={{ uri: item.thumbnailUrl }}
-                  style={[styles.media, StyleSheet.absoluteFillObject as any]}
-                  resizeMode="cover"
-                />
-              ) : null}
-              <View style={styles.lockOverlay}>
-                <Ionicons name="lock-closed" size={32} color="white" />
-                <Text style={styles.lockOverlayText}>Unlock to watch</Text>
-              </View>
-            </View>
-          ) : item.thumbnailUrl ? (
+          {item.thumbnailUrl ? (
             <View style={styles.videoContainer}>
               <Image
                 source={{ uri: item.thumbnailUrl }}
@@ -442,16 +426,9 @@ export default function GalleryScreen() {
     return true;
   });
 
-  const isPaid = userDoc?.paid === true;
-
   const handleVideoPress = useCallback((item: GalleryFeedItem) => {
-    // Tutorials require payment
-    if (item.source === "tutorial" && !isPaid) {
-      Alert.alert("Unlock Required", "Contact admin to get access to tutorial videos.");
-      return;
-    }
     setActiveVideo(item);
-  }, [isPaid]);
+  }, []);
 
   const renderItem = useCallback(
     ({ item, index }: { item: GalleryFeedItem; index: number }) => (
@@ -460,14 +437,13 @@ export default function GalleryScreen() {
         userId={userId}
         userName={displayName}
         userNameMap={userNameMap}
-        isPaid={isPaid}
         isAdmin={isAdmin}
         isLast={index === filteredMedia.length - 1}
         isVisible={index === visibleIndex}
         onVideoPress={handleVideoPress}
       />
     ),
-    [userId, displayName, userNameMap, isPaid, isAdmin, filteredMedia.length, visibleIndex, handleVideoPress]
+    [userId, displayName, userNameMap, isAdmin, filteredMedia.length, visibleIndex, handleVideoPress]
   );
 
   const keyExtractor = useCallback((item: GalleryFeedItem) => item.id, []);
@@ -723,19 +699,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  lockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  lockOverlayText: {
-    color: "white",
-    marginTop: 8,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-
   // Post footer
   postFooter: {
     paddingHorizontal: 16,

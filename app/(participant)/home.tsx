@@ -28,7 +28,6 @@ import {
   Card,
   SectionHeader,
   GoldButton,
-  PaymentBanner,
   VideoPlayerModal,
 } from "../../src/components";
 import { GalleryFeedItem } from "../../src/hooks/useGalleryFeed";
@@ -202,7 +201,7 @@ function AnnouncementCard({ announcement, authorName, isAdmin }: AnnouncementCar
 
   return (
     <View style={styles.announcementCard}>
-      <Ionicons name="megaphone" size={20} color={colors.orange} style={styles.announcementIcon} />
+      <Ionicons name="megaphone" size={20} color={colors.accent} style={styles.announcementIcon} />
       <View style={{ flex: 1 }}>
         <Text style={styles.announcementText}>{announcement.text}</Text>
         <Text style={styles.announcementMeta}>
@@ -217,7 +216,7 @@ function AnnouncementCard({ announcement, authorName, isAdmin }: AnnouncementCar
           style={styles.announcementDismiss}
           accessibilityLabel="Dismiss announcement"
         >
-          <Ionicons name="close" size={18} color={colors.textSecondary} />
+          <Ionicons name="close" size={18} color="rgba(255,255,255,0.7)" />
         </TouchableOpacity>
       )}
     </View>
@@ -272,14 +271,13 @@ function QuickActionTile({ icon, label, onPress, highlight }: QuickActionTilePro
 }
 
 interface QuickActionsProps {
-  isPaid: boolean;
   isAdmin: boolean;
   router: ReturnType<typeof useRouter>;
   nearestSessionId: string | null;
   userId: string;
 }
 
-function QuickActions({ isPaid, isAdmin, router, nearestSessionId, userId }: QuickActionsProps) {
+function QuickActions({ isAdmin, router, nearestSessionId, userId }: QuickActionsProps) {
   const [uploading, setUploading] = useState(false);
 
   async function handleAddPhoto() {
@@ -501,7 +499,6 @@ export default function ParticipantHome() {
   const userName = userDoc?.name ?? "You";
   const userId = authUser?.uid ?? "";
   const isAdmin = userDoc?.role === "admin";
-  const isPaid = userDoc?.paid ?? true;
 
   // Find nearest session (by absolute time distance) for upload attachment
   const now2 = Date.now();
@@ -534,12 +531,7 @@ export default function ParticipantHome() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Payment banner — only for unpaid participants, never admins */}
-        {userDoc != null && userDoc.paid === false && userDoc.role === "participant" && (
-          <PaymentBanner />
-        )}
-
-        {/* 2. Next session hero */}
+        {/* 1. Next session hero */}
         {nextSession != null && class_ != null ? (
           <NextSessionHero
             session={nextSession}
@@ -579,7 +571,7 @@ export default function ParticipantHome() {
               );
             }}
           >
-            <Ionicons name="megaphone-outline" size={18} color={colors.orange} />
+            <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
             <Text style={styles.postAnnouncementText}>Post Announcement</Text>
           </TouchableOpacity>
         )}
@@ -604,7 +596,6 @@ export default function ParticipantHome() {
 
         {/* 5. Quick Actions */}
         <QuickActions
-          isPaid={isPaid}
           isAdmin={isAdmin}
           router={router}
           nearestSessionId={nearestSessionId}
@@ -751,47 +742,42 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginHorizontal: spacing.pagePadding,
     marginBottom: spacing.base,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primary,
     borderRadius: spacing.cardRadius,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.base,
     gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.orange,
   },
   postAnnouncementText: {
     fontSize: typography.fontSize.body,
     fontWeight: typography.fontWeight.semiBold,
-    color: colors.orange,
+    color: "#FFFFFF",
   },
 
   // Announcement card
   announcementCard: {
     marginHorizontal: spacing.pagePadding,
     marginBottom: spacing.sm,
-    backgroundColor: colors.orangeBg,
+    backgroundColor: colors.primary,
     borderRadius: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.orange,
-    padding: 14,
+    padding: 16,
     flexDirection: "row",
     alignItems: "flex-start",
   },
   announcementIcon: {
-    marginRight: spacing.sm,
+    marginRight: 10,
     marginTop: 2,
   },
   announcementText: {
     fontSize: 15,
     fontWeight: "600",
-    color: colors.primary,
+    color: "#FFFFFF",
     lineHeight: 22,
     marginBottom: 4,
   },
   announcementMeta: {
     fontSize: 12,
-    color: colors.orange,
-    fontWeight: "500",
+    color: "rgba(255,255,255,0.6)",
   },
   announcementDismiss: {
     padding: 2,

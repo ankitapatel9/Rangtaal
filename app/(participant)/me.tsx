@@ -80,21 +80,6 @@ export default function ParticipantMe() {
           </View>
         </View>
 
-        {/* Payment — participants only */}
-        {userDoc?.role === "participant" && (
-          <View style={[styles.paymentCard, userDoc?.paid && styles.paymentCardPaid]}>
-            <View>
-              <Text style={styles.paymentTitle}>Payment</Text>
-              <Text style={styles.paymentSub}>
-                {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-              </Text>
-            </View>
-            <Text style={[styles.paymentStatus, userDoc?.paid ? styles.paidText : styles.unpaidText]}>
-              {userDoc?.paid ? "Paid ✓" : "Unpaid"}
-            </Text>
-          </View>
-        )}
-
         {/* Settings */}
         <View style={styles.menuCard}>
           <SettingsRow
@@ -151,28 +136,6 @@ const styles = StyleSheet.create({
   statNumber: { fontSize: 28, fontWeight: "800", color: colors.primary },
   statLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
   statDivider: { width: 1, backgroundColor: colors.border },
-  paymentCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.border,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  paymentCardPaid: { borderLeftColor: colors.green },
-  paymentTitle: { fontSize: 15, fontWeight: "600", color: colors.primary },
-  paymentSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  paymentStatus: { fontSize: 14, fontWeight: "700" },
-  paidText: { color: colors.green },
-  unpaidText: { color: colors.textSecondary },
   menuCard: {
     backgroundColor: colors.card,
     borderRadius: 14,

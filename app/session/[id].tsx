@@ -178,7 +178,6 @@ interface RsvpSectionProps {
   userName: string;
   cancelled: boolean;
   cancellationReason: string | null;
-  userPaid: boolean;
 }
 
 function RsvpSection({
@@ -415,14 +414,12 @@ function AdminSetTopicSection({ sessionId, currentTopic }: AdminSetTopicSectionP
 
 interface TutorialCardProps {
   tutorial: TutorialDoc;
-  userPaid: boolean;
   userId: string;
   userName: string;
 }
 
 const TutorialCard = React.memo(function TutorialCard({
   tutorial,
-  userPaid,
   userId,
   userName,
 }: TutorialCardProps) {
@@ -432,16 +429,8 @@ const TutorialCard = React.memo(function TutorialCard({
     { id: string; name: string } | undefined
   >(undefined);
   const { comments } = useComments(tutorial.id);
-  const locked = !userPaid;
 
   function handleThumbnailPress() {
-    if (locked) {
-      Alert.alert(
-        "Unlock Required",
-        "Contact admin to get access to tutorials."
-      );
-      return;
-    }
     setVideoOpen(true);
   }
 
@@ -452,7 +441,7 @@ const TutorialCard = React.memo(function TutorialCard({
         onPress={handleThumbnailPress}
         activeOpacity={0.8}
         style={styles.tutorialThumbnailArea}
-        accessibilityLabel={locked ? "Locked tutorial" : `Play ${tutorial.title}`}
+        accessibilityLabel={`Play ${tutorial.title}`}
       >
         {tutorial.thumbnailUrl ? (
           <Image
@@ -465,15 +454,8 @@ const TutorialCard = React.memo(function TutorialCard({
             <Ionicons
               name="play-circle"
               size={56}
-              color={locked ? colors.secondary : "rgba(255,255,255,0.85)"}
+              color="rgba(255,255,255,0.85)"
             />
-          </View>
-        )}
-
-        {/* Lock badge top-right */}
-        {locked && (
-          <View style={styles.tutorialLockBadge}>
-            <Ionicons name="lock-closed" size={14} color={colors.card} />
           </View>
         )}
 
@@ -556,7 +538,6 @@ const TutorialCard = React.memo(function TutorialCard({
 interface TutorialsSectionProps {
   sessionId: string;
   tutorials: TutorialDoc[];
-  userPaid: boolean;
   isAdmin: boolean;
   userId: string;
   userName: string;
@@ -565,7 +546,6 @@ interface TutorialsSectionProps {
 function TutorialsSection({
   sessionId,
   tutorials,
-  userPaid,
   isAdmin,
   userId,
   userName,
@@ -657,7 +637,6 @@ function TutorialsSection({
           <TutorialCard
             key={t.id}
             tutorial={t}
-            userPaid={userPaid}
             userId={userId}
             userName={userName}
           />
@@ -1026,7 +1005,6 @@ export default function SessionDetail() {
   const userId = authUser?.uid ?? "";
   const userName = userDoc?.name ?? "You";
   const isAdmin = userDoc?.role === "admin";
-  const userPaid = userDoc?.paid ?? false;
 
   function handleBack() {
     if (router.canGoBack()) {
@@ -1067,7 +1045,6 @@ export default function SessionDetail() {
           userName={userName}
           cancelled={isCancelled}
           cancellationReason={session.cancellationReason}
-          userPaid={userPaid}
         />
 
         {/* Section 3: Admin cancel */}
@@ -1091,7 +1068,6 @@ export default function SessionDetail() {
         <TutorialsSection
           sessionId={session.id}
           tutorials={tutorials}
-          userPaid={userPaid}
           isAdmin={isAdmin}
           userId={userId}
           userName={userName}
@@ -1350,14 +1326,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.primary,
-  },
-  tutorialLockBadge: {
-    position: "absolute",
-    top: spacing.sm,
-    right: spacing.sm,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRadius: spacing.tagRadius,
-    padding: 4,
   },
   tutorialDurationBadge: {
     position: "absolute",
