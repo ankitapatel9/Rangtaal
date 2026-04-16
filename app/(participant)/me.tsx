@@ -80,18 +80,20 @@ export default function ParticipantMe() {
           </View>
         </View>
 
-        {/* Payment */}
-        <View style={[styles.paymentCard, userDoc?.paid && styles.paymentCardPaid]}>
-          <View>
-            <Text style={styles.paymentTitle}>Payment</Text>
-            <Text style={styles.paymentSub}>
-              {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+        {/* Payment — participants only */}
+        {userDoc?.role === "participant" && (
+          <View style={[styles.paymentCard, userDoc?.paid && styles.paymentCardPaid]}>
+            <View>
+              <Text style={styles.paymentTitle}>Payment</Text>
+              <Text style={styles.paymentSub}>
+                {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </Text>
+            </View>
+            <Text style={[styles.paymentStatus, userDoc?.paid ? styles.paidText : styles.unpaidText]}>
+              {userDoc?.paid ? "Paid ✓" : "Unpaid"}
             </Text>
           </View>
-          <Text style={[styles.paymentStatus, userDoc?.paid ? styles.paidText : styles.unpaidText]}>
-            {userDoc?.paid ? "Paid ✓" : "Unpaid"}
-          </Text>
-        </View>
+        )}
 
         {/* Settings */}
         <View style={styles.menuCard}>
@@ -104,7 +106,10 @@ export default function ParticipantMe() {
           <SettingsRow
             icon="images-outline"
             label="My Uploads"
-            onPress={() => router.push("/(participant)/gallery" as any)}
+            onPress={() => {
+              const isAdmin = userDoc?.role === "admin";
+              router.push(isAdmin ? "/(admin)/gallery" : "/(participant)/gallery" as any);
+            }}
           />
           <View style={styles.menuDivider} />
           <SettingsRow

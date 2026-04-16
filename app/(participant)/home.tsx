@@ -202,29 +202,24 @@ function AnnouncementCard({ announcement, authorName, isAdmin }: AnnouncementCar
 
   return (
     <View style={styles.announcementCard}>
-      <View style={styles.announcementBorder} />
-      <View style={styles.announcementContent}>
-        <View style={styles.announcementHeader}>
-          <Text style={styles.announcementIcon}>📢</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.announcementText}>{announcement.text}</Text>
-            <Text style={styles.announcementMeta}>
-              {authorName}
-              {ts ? `  ·  ${ts}` : ""}
-            </Text>
-          </View>
-          {isAdmin && (
-            <TouchableOpacity
-              onPress={handleDismiss}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.announcementDismiss}
-              accessibilityLabel="Dismiss announcement"
-            >
-              <Ionicons name="close" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
+      <Ionicons name="megaphone" size={20} color={colors.orange} style={styles.announcementIcon} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.announcementText}>{announcement.text}</Text>
+        <Text style={styles.announcementMeta}>
+          {authorName}
+          {ts ? `  ·  ${ts}` : ""}
+        </Text>
       </View>
+      {isAdmin && (
+        <TouchableOpacity
+          onPress={handleDismiss}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.announcementDismiss}
+          accessibilityLabel="Dismiss announcement"
+        >
+          <Ionicons name="close" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -517,8 +512,7 @@ export default function ParticipantHome() {
   );
   const nearestSessionId = sorted2[0]?.id ?? null;
 
-  // Latest active announcement only
-  const latestAnnouncement = announcements[0] ?? null;
+  // All active announcements (newest first)
 
   function navigateToSession(id: string) {
     router.push(`/session/${id}` as Parameters<typeof router.push>[0]);
@@ -540,8 +534,8 @@ export default function ParticipantHome() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Payment banner — show when not paid and not admin */}
-        {userDoc != null && userDoc.paid === false && userDoc.role !== "admin" && (
+        {/* 1. Payment banner — only for unpaid participants, never admins */}
+        {userDoc != null && userDoc.paid === false && userDoc.role === "participant" && (
           <PaymentBanner />
         )}
 
@@ -585,19 +579,20 @@ export default function ParticipantHome() {
               );
             }}
           >
-            <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
+            <Ionicons name="megaphone-outline" size={18} color={colors.orange} />
             <Text style={styles.postAnnouncementText}>Post Announcement</Text>
           </TouchableOpacity>
         )}
 
-        {/* 3. Announcement card (latest active only) */}
-        {latestAnnouncement != null && (
+        {/* 3. All active announcements */}
+        {announcements.map((announcement) => (
           <AnnouncementCard
-            announcement={latestAnnouncement}
-            authorName={userNameMap[latestAnnouncement.createdBy] ?? "Admin"}
+            key={announcement.id}
+            announcement={announcement}
+            authorName={userNameMap[announcement.createdBy] ?? "Admin"}
             isAdmin={isAdmin}
           />
-        )}
+        ))}
 
         {/* 4. This Week's Focus */}
         {nextSession?.topic != null && nextSession.topic.length > 0 && (
@@ -762,46 +757,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     gap: spacing.xs,
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: colors.orange,
   },
   postAnnouncementText: {
     fontSize: typography.fontSize.body,
     fontWeight: typography.fontWeight.semiBold,
-    color: colors.accent,
+    color: colors.orange,
   },
 
   // Announcement card
   announcementCard: {
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.base,
-    backgroundColor: colors.paymentBannerBg,
-    borderRadius: spacing.cardRadius,
-    flexDirection: "row",
-    overflow: "hidden",
-    ...shadows.card,
-  },
-  announcementBorder: {
-    width: 4,
-    backgroundColor: colors.accent,
-    borderTopLeftRadius: spacing.cardRadius,
-    borderBottomLeftRadius: spacing.cardRadius,
-  },
-  announcementContent: {
-    flex: 1,
-    padding: spacing.cardPadding,
-  },
-  announcementHeader: {
+    marginBottom: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.orange,
+    padding: 14,
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: spacing.sm,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
   },
   announcementIcon: {
-    fontSize: 18,
-    lineHeight: 22,
+    marginRight: spacing.sm,
+    marginTop: 1,
   },
   announcementText: {
     fontSize: typography.fontSize.body,
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: typography.fontWeight.bold,
     color: colors.primary,
     lineHeight: typography.lineHeight.relaxed,
     marginBottom: 4,
