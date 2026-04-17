@@ -188,36 +188,32 @@ function PostEngagement({ mediaId, userId, onCommentPress }: PostEngagementProps
 
   return (
     <View>
-      {/* Engagement row */}
+      {/* Engagement icon row */}
       <View style={styles.engagementRow}>
         <TouchableOpacity
           onPress={toggle}
-          style={styles.engagementBtn}
           accessibilityLabel={isLiked ? "Unlike" : "Like"}
         >
           <Ionicons
             name={isLiked ? "heart" : "heart-outline"}
-            size={24}
+            size={22}
             color={isLiked ? colors.accent : colors.textBody}
           />
-          {likeCount > 0 && (
-            <Text style={[styles.engagementCount, isLiked && styles.likedCount]}>
-              {likeCount}
-            </Text>
-          )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onCommentPress} style={styles.engagementBtn}>
+        <TouchableOpacity onPress={onCommentPress}>
           <Ionicons name="chatbubble-outline" size={22} color={colors.textBody} />
-          {commentCount > 0 && (
-            <Text style={styles.engagementCount}>{commentCount}</Text>
-          )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleShare} style={styles.engagementBtn}>
+        <TouchableOpacity onPress={handleShare}>
           <Ionicons name="share-outline" size={22} color={colors.textBody} />
         </TouchableOpacity>
       </View>
+
+      {/* Like count */}
+      {likeCount > 0 && (
+        <Text style={styles.likeCount}>{likeCount} like{likeCount !== 1 ? "s" : ""}</Text>
+      )}
 
       {/* Top comment preview */}
       {topComment != null && (
@@ -231,7 +227,7 @@ function PostEngagement({ mediaId, userId, onCommentPress }: PostEngagementProps
 
       {/* View all comments link */}
       {commentCount > 0 && (
-        <TouchableOpacity onPress={onCommentPress} style={styles.viewAllComments}>
+        <TouchableOpacity onPress={onCommentPress}>
           <Text style={styles.viewAllCommentsText}>
             View all {commentCount} comment{commentCount !== 1 ? "s" : ""}
           </Text>
@@ -256,11 +252,11 @@ interface FeedPostProps {
 
 import { formatTimeAgo as formatTime, toEpochMs } from "../../src/lib/formatTime";
 
-function formatSessionDate(uploadedAt: number): string {
+function formatPostDate(uploadedAt: number): string {
   const ms = toEpochMs(uploadedAt);
-  if (ms === 0) return "Session";
+  if (ms === 0) return "";
   const d = new Date(ms);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " session";
+  return "· " + d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatTimeAgo(uploadedAt: number): string {
@@ -306,10 +302,9 @@ const FeedPost = React.memo(function FeedPost({ item, userId, userName, userName
             {uploaderLabel.charAt(0).toUpperCase()}
           </Text>
         </View>
-        <View style={styles.authorInfo}>
-          <Text style={styles.authorName}>{uploaderLabel}</Text>
-          <Text style={styles.sessionLabel}>{formatSessionDate(item.uploadedAt)}</Text>
-        </View>
+        <Text style={styles.authorName}>{uploaderLabel}</Text>
+        <Text style={styles.sessionLabel}>{formatPostDate(item.uploadedAt)}</Text>
+        <View style={{ flex: 1 }} />
         {(isOwner || isAdmin) && (
           <TouchableOpacity onPress={handleMorePress} style={styles.moreBtn} accessibilityLabel="More options">
             <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
@@ -619,51 +614,47 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
 
-  // Post
+  // Post — no white card wrapper, sits on page background
   post: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.pageBackground,
     marginBottom: 0,
   },
-  postLast: {
-    // no special treatment needed; divider handles spacing
-  },
+  postLast: {},
 
-  // Author row
+  // Author row — border-bottom separates from media
   authorRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    gap: 10,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8E2D9",
   },
   authorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   authorAvatarInitial: {
     color: colors.card,
-    fontSize: 13,
+    fontSize: 9,
     fontWeight: "700",
-  },
-  authorInfo: {
-    flex: 1,
   },
   moreBtn: {
     padding: 4,
   },
   authorName: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "600",
     color: colors.primary,
   },
   sessionLabel: {
     fontSize: 11,
     color: colors.textSecondary,
-    marginTop: 1,
   },
 
   // Media — edge-to-edge, no border radius
@@ -673,7 +664,7 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     width: SCREEN_WIDTH,
-    aspectRatio: 3 / 4,
+    aspectRatio: 16 / 9,
   },
   videoPlaceholder: {
     backgroundColor: colors.primary,
@@ -699,37 +690,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // Post footer
+
+  // Post footer: engagement + comments
   postFooter: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
 
-  // Engagement row
+  // Engagement icon row
   engagementRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 14,
     marginBottom: 6,
   },
-  engagementBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  engagementCount: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.textBody,
-  },
-  likedCount: {
-    color: colors.accent,
+
+  // Like count — separate bold line below icons
+  likeCount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.primary,
+    marginBottom: 4,
   },
 
   // Comment preview
   commentPreview: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   commentPreviewText: {
     fontSize: 13,
@@ -742,12 +729,10 @@ const styles = StyleSheet.create({
   },
 
   // View all comments
-  viewAllComments: {
-    marginBottom: 4,
-  },
   viewAllCommentsText: {
     fontSize: 12,
     color: colors.textSecondary,
+    marginBottom: 2,
   },
 
   // Timestamp
@@ -757,13 +742,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     letterSpacing: 0.5,
     textTransform: "uppercase",
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: 4,
   },
 
   // Tutorial title
   titleRow: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingTop: 8,
   },
   tutorialTitle: {
@@ -777,10 +761,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Divider
+  // Divider between posts
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: "#E8E2D9",
   },
 
   // Loading / empty

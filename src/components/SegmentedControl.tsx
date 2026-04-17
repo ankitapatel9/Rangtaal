@@ -41,15 +41,15 @@ export function SegmentedControl({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    backgroundColor: colors.border,
-    borderRadius: spacing.pillRadius,
+    backgroundColor: "#E8E2D9",
+    borderRadius: 10,
     padding: 3,
   },
   segment: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: spacing.md,
-    borderRadius: spacing.pillRadius,
+    borderRadius: 8,
     alignItems: "center",
   },
   activeSegment: {
@@ -57,12 +57,12 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   label: {
-    fontSize: typography.fontSize.body,
-    fontWeight: typography.fontWeight.semiBold,
+    fontSize: 13,
+    fontWeight: typography.fontWeight.medium,
     color: colors.textSecondary,
   },
   activeLabel: {
     color: colors.primary,
-    fontWeight: typography.fontWeight.bold,
+    fontWeight: typography.fontWeight.semiBold,
   },
 });

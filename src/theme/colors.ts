@@ -3,8 +3,8 @@
 
 export const colors = {
   // Brand colors — matched to logo exactly
-  primary: "#342145",         // Deep Plum — hero bg, headers, text
-  accent: "#D4A843",          // Saffron Gold — CTAs, buttons, camera
+  primary: "#2D1B3D",         // Deep Plum — hero bg, headers, text
+  accent: "#C9963C",          // Saffron Gold — CTAs, buttons, camera
   orange: "#C85A2A",          // Warm Orange — likes, bell badge, highlights
   green: "#2D6B4F",           // Forest Green — paid, success, confirmed
 
@@ -13,11 +13,11 @@ export const colors = {
   card: "#FFFFFF",
 
   // Text
-  textBody: "#4A3860",
-  textSecondary: "#8B8FA3",
+  textBody: "#5A4B6B",
+  textSecondary: "#9CA3AF",
 
   // UI
-  border: "#E5DFD6",
+  border: "#E8E2D9",
   destructive: "#D94032",
 
   // Semantic backgrounds
@@ -27,19 +27,22 @@ export const colors = {
   successBg: "#E8F5EE",
   orangeBg: "#FFF0E8",
 
+  // Subtle divider (menu item separators)
+  subtleDivider: "#F5F0EA",
+
   // Hero gradient
-  heroGradientStart: "#342145",
+  heroGradientStart: "#2D1B3D",
   heroGradientEnd: "#4A3060",
 
   // Avatars — rotate all 4 brand colors
-  avatarPlum: "#342145",
-  avatarGold: "#D4A843",
+  avatarPlum: "#2D1B3D",
+  avatarGold: "#C9963C",
   avatarOrange: "#C85A2A",
   avatarGreen: "#2D6B4F",
 
   // Aliases
-  secondary: "#8B8FA3",
-  body: "#4A3860",
+  secondary: "#9CA3AF",
+  body: "#5A4B6B",
 } as const;
 
 export type ColorKey = keyof typeof colors;

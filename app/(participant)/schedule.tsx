@@ -12,7 +12,6 @@ import { useActiveClass } from "../../src/hooks/useActiveClass";
 import { useSessions } from "../../src/hooks/useSessions";
 import {
   SegmentedControl,
-  SectionHeader,
   Card,
   AvatarStack,
 } from "../../src/components";
@@ -233,11 +232,8 @@ function CalendarView({ sessions, class_, onSelectSession }: CalendarViewProps) 
                 </Text>
                 {class_ != null && (
                   <Text style={styles.previewTime}>
-                    {class_.startTime} – {class_.endTime}
+                    {class_.startTime} – {class_.endTime} · {class_.location}
                   </Text>
-                )}
-                {class_ != null && (
-                  <Text style={styles.previewLocation}>{class_.location}</Text>
                 )}
                 <View style={styles.previewMeta}>
                   <AvatarStack
@@ -306,7 +302,7 @@ function ListView({ sessions, onSelectSession }: ListViewProps) {
                 <Text style={styles.cancelledLabel}>Cancelled</Text>
               )}
             </View>
-            <Text style={styles.listChevron}>›</Text>
+            <Text style={[styles.listChevron, thisWeek && !isCancelled && styles.listChevronActive]}>›</Text>
           </View>
         </Card>
       </TouchableOpacity>
@@ -325,22 +321,14 @@ function ListView({ sessions, onSelectSession }: ListViewProps) {
     <View>
       {upcoming.length > 0 && (
         <>
-          <SectionHeader
-            title="UPCOMING"
-            rightLabelVariant="gold"
-            style={styles.listSectionHeader}
-          />
+          <Text style={styles.listSectionLabelGold}>UPCOMING</Text>
           {upcoming.map((s) => <SessionRow key={s.id} session={s} />)}
         </>
       )}
 
       {past.length > 0 && (
         <>
-          <SectionHeader
-            title="PAST"
-            rightLabelVariant="gray"
-            style={styles.listSectionHeader}
-          />
+          <Text style={[styles.listSectionLabelGold, styles.listSectionLabelGray]}>PAST</Text>
           {past.map((s) => (
             <View key={s.id} style={styles.pastRow}>
               <SessionRow session={s} />
@@ -351,11 +339,7 @@ function ListView({ sessions, onSelectSession }: ListViewProps) {
 
       {cancelled.length > 0 && (
         <>
-          <SectionHeader
-            title="CANCELLED"
-            rightLabelVariant="gray"
-            style={styles.listSectionHeader}
-          />
+          <Text style={[styles.listSectionLabelGold, styles.listSectionLabelGray]}>CANCELLED</Text>
           {cancelled.map((s) => <SessionRow key={s.id} session={s} />)}
         </>
       )}
@@ -417,7 +401,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pageBackground,
   },
   headerTitle: {
-    fontSize: typography.fontSize.heroTitle,
+    fontSize: 22,
     fontWeight: typography.fontWeight.extraBold,
     color: colors.primary,
     marginBottom: spacing.sm,
@@ -441,7 +425,7 @@ const styles = StyleSheet.create({
   },
   monthArrow: {
     fontSize: 24,
-    color: colors.primary,
+    color: colors.textSecondary,
     fontWeight: typography.fontWeight.bold,
     paddingHorizontal: spacing.sm,
   },
@@ -465,9 +449,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   dayCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -528,18 +512,18 @@ const styles = StyleSheet.create({
   },
   previewInfo: { flex: 1 },
   previewDate: {
-    fontSize: typography.fontSize.cardTitle,
-    fontWeight: typography.fontWeight.semiBold,
+    fontSize: 17,
+    fontWeight: typography.fontWeight.bold,
     color: colors.primary,
     marginBottom: 2,
   },
   previewTime: {
-    fontSize: typography.fontSize.body,
-    color: colors.textBody,
-    marginBottom: 2,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
   previewLocation: {
-    fontSize: typography.fontSize.caption,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
@@ -555,14 +539,22 @@ const styles = StyleSheet.create({
   },
   previewChevron: {
     fontSize: 22,
-    color: colors.textSecondary,
+    color: colors.accent,
     marginLeft: spacing.sm,
   },
 
   // List view
-  listSectionHeader: {
+  listSectionLabelGold: {
+    fontSize: 11,
+    color: colors.accent,
+    fontWeight: typography.fontWeight.bold,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
     marginTop: spacing.base,
-    marginBottom: spacing.xs,
+    marginBottom: 10,
+  },
+  listSectionLabelGray: {
+    color: colors.textSecondary,
   },
   listCard: {
     marginBottom: spacing.cardGap,
@@ -596,12 +588,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   listChevron: {
-    fontSize: 22,
-    color: colors.textSecondary,
+    fontSize: 20,
+    color: colors.border,
     marginLeft: spacing.sm,
   },
+  listChevronActive: {
+    color: colors.accent,
+  },
   pastRow: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   emptyCard: {
     alignItems: "center",

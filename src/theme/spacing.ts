@@ -30,14 +30,14 @@ export const spacing = {
 
 export const shadows = {
   card: {
-    shadowColor: "#342145",
+    shadowColor: "#2D1B3D",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
   cardElevated: {
-    shadowColor: "#342145",
+    shadowColor: "#2D1B3D",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 40,

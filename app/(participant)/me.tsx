@@ -11,17 +11,14 @@ import { colors } from "../../src/theme/colors";
 import { INVITE_MESSAGE } from "../../src/lib/constants";
 
 function SettingsRow({
-  icon,
   label,
   onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity style={styles.menuRow} onPress={onPress} activeOpacity={0.7}>
-      <Ionicons name={icon} size={20} color={colors.primary} style={styles.menuIcon} />
       <Text style={styles.menuText}>{label}</Text>
       <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
     </TouchableOpacity>
@@ -57,39 +54,42 @@ export default function ParticipantMe() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile header */}
         <View style={styles.profileHeader}>
-          <Avatar name={userName} size={72} />
-          <Text style={styles.name}>{userName}</Text>
-          <Text style={styles.phone}>{userDoc?.phoneNumber ?? ""}</Text>
+          <Avatar name={userName} size={64} />
+          <View>
+            <Text style={styles.name}>{userName}</Text>
+            <Text style={styles.phone}>{userDoc?.phoneNumber ?? ""}</Text>
+          </View>
         </View>
 
         {/* Stats */}
         <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{attended}</Text>
-            <Text style={styles.statLabel}>Attended</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{rsvpd}</Text>
-            <Text style={styles.statLabel}>RSVP'd</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Uploaded</Text>
+          <Text style={styles.statsSeasonLabel}>THIS SEASON</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{attended}</Text>
+              <Text style={styles.statLabel}>Attended</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{rsvpd}</Text>
+              <Text style={styles.statLabel}>RSVP'd</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statLabel}>Uploaded</Text>
+            </View>
           </View>
         </View>
 
         {/* Settings */}
         <View style={styles.menuCard}>
           <SettingsRow
-            icon="notifications-outline"
             label="Notifications"
             onPress={() => router.push("/notifications" as any)}
           />
           <View style={styles.menuDivider} />
           <SettingsRow
-            icon="help-circle-outline"
             label="Help & Support"
             onPress={() =>
               Alert.alert(
@@ -102,7 +102,7 @@ export default function ParticipantMe() {
 
         {/* Invite */}
         <View style={styles.menuCard}>
-          <SettingsRow icon="share-social-outline" label="Invite Friends" onPress={handleInvite} />
+          <SettingsRow label="Invite Friends" onPress={handleInvite} />
         </View>
 
         {/* Sign out */}
@@ -117,14 +117,22 @@ export default function ParticipantMe() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.pageBackground },
   content: { padding: 20, paddingBottom: 40 },
-  profileHeader: { alignItems: "center", marginBottom: 24 },
-  name: { fontSize: 24, fontWeight: "800", color: colors.primary, marginTop: 12 },
-  phone: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+
+  // Horizontal profile header
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 24,
+  },
+  name: { fontSize: 22, fontWeight: "800", color: colors.primary },
+  phone: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+
+  // Stats card
   statsCard: {
     backgroundColor: colors.card,
     borderRadius: 14,
     padding: 18,
-    flexDirection: "row",
     marginBottom: 12,
     shadowColor: colors.primary,
     shadowOpacity: 0.06,
@@ -132,10 +140,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  statsSeasonLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    marginBottom: 12,
+  },
+  statsRow: { flexDirection: "row" },
   statItem: { flex: 1, alignItems: "center" },
   statNumber: { fontSize: 28, fontWeight: "800", color: colors.primary },
   statLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
   statDivider: { width: 1, backgroundColor: colors.border },
+
+  // Menu card
   menuCard: {
     backgroundColor: colors.card,
     borderRadius: 14,
@@ -147,10 +166,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  menuRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
-  menuIcon: { marginRight: 12 },
-  menuText: { flex: 1, fontSize: 15, color: colors.primary, fontWeight: "500" },
-  menuDivider: { height: 1, backgroundColor: colors.border, marginLeft: 48 },
+  menuRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16 },
+  menuText: { flex: 1, fontSize: 15, color: colors.primary },
+  menuDivider: { height: 1, backgroundColor: "#F5F0EA" },
+
+  // Sign out
   signOutCard: {
     backgroundColor: colors.card,
     borderRadius: 14,
