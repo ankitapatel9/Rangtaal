@@ -76,19 +76,18 @@ async function generateThumbnailHome(videoUri: string): Promise<string | null> {
 
 function formatDayLabel(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+  return "NEXT " + date.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
 }
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
-    weekday: "long",
     month: "long",
     day: "numeric",
   });
 }
 
-function formatTimeRange(class_: ClassDoc): string {
-  return `${class_.startTime} – ${class_.endTime}`;
+function formatTimeShort(class_: ClassDoc): string {
+  return class_.startTime;
 }
 
 function getNextSession(sessions: SessionDoc[]): SessionDoc | null {
@@ -99,7 +98,9 @@ function getNextSession(sessions: SessionDoc[]): SessionDoc | null {
   return upcoming[0] ?? null;
 }
 
-// ─── Next session hero card ──────────────────────────────────────────────────
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
+// ─── Next session hero card (mockup 20, lines 19-34) ────────────────────────
 
 interface HeroCardProps {
   session: SessionDoc;
@@ -112,13 +113,9 @@ interface HeroCardProps {
 
 function NextSessionHero({ session, class_, userName, userId, userNameMap, onPress }: HeroCardProps) {
   const dayLabel = formatDayLabel(session.date);
-  const dateStr = formatDate(session.date);
-  const timeStr = formatTimeRange(class_);
+  const dateStr = `${formatDate(session.date)} \u00B7 ${formatTimeShort(class_)}`;
   const rsvpCount = session.rsvps.length;
   const isRsvpd = session.rsvps.includes(userId);
-
-  // Build avatar names from rsvp UIDs using the real name map
-  const rsvpNames = session.rsvps.map((uid) => userNameMap[uid] ?? "User");
 
   return (
     <TouchableOpacity
@@ -126,14 +123,13 @@ function NextSessionHero({ session, class_, userName, userId, userNameMap, onPre
       activeOpacity={0.95}
       style={styles.hero}
     >
-      {/* Day label */}
+      {/* Day label — gold, 10px, uppercase, letter-spacing 1.5 */}
       <Text style={styles.heroLabel}>{dayLabel}</Text>
 
       {/* Date + RSVP count row */}
       <View style={styles.heroRow}>
         <View style={styles.heroDateBlock}>
           <Text style={styles.heroDate}>{dateStr}</Text>
-          <Text style={styles.heroTime}>{timeStr}</Text>
           <Text style={styles.heroLocation}>{class_.location}</Text>
         </View>
         <View style={styles.heroCountBlock}>
@@ -142,18 +138,22 @@ function NextSessionHero({ session, class_, userName, userId, userNameMap, onPre
         </View>
       </View>
 
-      {/* Avatar stack */}
-      {rsvpNames.length > 0 && (
-        <AvatarStack names={rsvpNames} size={28} maxVisible={5} style={styles.heroAvatars} />
-      )}
-
-      {/* RSVP button */}
-      <GoldButton
-        label={isRsvpd ? "You're Going ✓" : "RSVP to this session"}
-        onPress={() => onPress()}
-        variant={isRsvpd ? "outline" : "gold"}
-        style={styles.heroButton}
-      />
+      {/* RSVP button — gold bg, white text, 10px border-radius */}
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={[
+          styles.heroRsvpBtn,
+          isRsvpd && styles.heroRsvpBtnConfirmed,
+        ]}
+      >
+        <Text style={[
+          styles.heroRsvpText,
+          isRsvpd && styles.heroRsvpTextConfirmed,
+        ]}>
+          {isRsvpd ? "You\u2019re Going \u2713" : "RSVP \u2192"}
+        </Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -171,7 +171,8 @@ function NoSessionCard() {
   );
 }
 
-// ─── Announcement card ───────────────────────────────────────────────────────
+// ─── Announcement card (mockup 20, lines 37-46) ─────────────────────────────
+// Warm cream bg (#FFF6E0), gold left border, 📢 emoji, plum text
 
 interface AnnouncementCardProps {
   announcement: AnnouncementDoc;
@@ -201,24 +202,26 @@ function AnnouncementCard({ announcement, authorName, isAdmin }: AnnouncementCar
 
   return (
     <View style={styles.announcementCard}>
-      <Ionicons name="megaphone" size={20} color={colors.accent} style={styles.announcementIcon} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.announcementText}>{announcement.text}</Text>
-        <Text style={styles.announcementMeta}>
-          {authorName}
-          {ts ? `  ·  ${ts}` : ""}
-        </Text>
+      <View style={styles.announcementInner}>
+        <Text style={styles.announcementIcon}>{"\uD83D\uDCE2"}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.announcementText}>{announcement.text}</Text>
+          <Text style={styles.announcementMeta}>
+            {authorName}
+            {ts ? ` \u00B7 ${ts}` : ""}
+          </Text>
+        </View>
+        {isAdmin && (
+          <TouchableOpacity
+            onPress={handleDismiss}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.announcementDismiss}
+            accessibilityLabel="Dismiss announcement"
+          >
+            <Ionicons name="close" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
-      {isAdmin && (
-        <TouchableOpacity
-          onPress={handleDismiss}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={styles.announcementDismiss}
-          accessibilityLabel="Dismiss announcement"
-        >
-          <Ionicons name="close" size={18} color="rgba(255,255,255,0.7)" />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -233,7 +236,7 @@ interface FocusCardProps {
 function FocusCard({ topic, topicDescription }: FocusCardProps) {
   return (
     <View style={styles.focusCard}>
-      <Text style={styles.focusLabel}>THIS WEEK'S FOCUS</Text>
+      <Text style={styles.focusLabel}>THIS WEEK&apos;S FOCUS</Text>
       <Text style={styles.focusTopic}>{topic}</Text>
       {topicDescription ? (
         <Text style={styles.focusDescription}>{topicDescription}</Text>
@@ -242,16 +245,16 @@ function FocusCard({ topic, topicDescription }: FocusCardProps) {
   );
 }
 
-// ─── Quick Actions row ────────────────────────────────────────────────────────
+// ─── Quick Actions row (mockup 20, lines 62-75) ─────────────────────────────
+// White cards with shadow, centered icon + label. Only "Add Photo" and "Invite".
 
 interface QuickActionTileProps {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   label: string;
   onPress: () => void;
-  highlight?: boolean;
 }
 
-function QuickActionTile({ icon, label, onPress, highlight }: QuickActionTileProps) {
+function QuickActionTile({ icon, label, onPress }: QuickActionTileProps) {
   return (
     <TouchableOpacity
       style={styles.quickTile}
@@ -260,10 +263,10 @@ function QuickActionTile({ icon, label, onPress, highlight }: QuickActionTilePro
     >
       <Ionicons
         name={icon}
-        size={26}
-        color={highlight ? colors.orange : colors.primary}
+        size={22}
+        color={colors.primary}
       />
-      <Text style={[styles.quickTileLabel, highlight && { color: colors.orange }]}>
+      <Text style={styles.quickTileLabel}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -358,7 +361,7 @@ function QuickActions({ isAdmin, router, nearestSessionId, userId }: QuickAction
     <View style={styles.quickActionsRow}>
       <QuickActionTile
         icon={uploading ? "hourglass-outline" : "camera-outline"}
-        label={uploading ? "Uploading…" : "Add Photo"}
+        label={uploading ? "Uploading\u2026" : "Add Photo"}
         onPress={handleAddPhoto}
       />
       <QuickActionTile
@@ -376,7 +379,9 @@ let VideoComponent: any = null;
 let ResizeModeEnum: any = null;
 try { VideoComponent = require("expo-av").Video; ResizeModeEnum = require("expo-av").ResizeMode; } catch {}
 
-// ─── Media feed post (Instagram-style) ──────────────────────────────────────
+// ─── Media feed post (mockup 08, lines 46-110) ─────────────────────────────
+// White cards with 14px border-radius, shadow.
+// Media INSIDE the card with margin and border-radius (NOT edge-to-edge).
 
 interface MediaPostProps {
   item: GalleryFeedItem;
@@ -392,15 +397,15 @@ function MediaPostEngagement({ parentId, parentType, userId }: { parentId: strin
   return (
     <View style={styles.engagementRow}>
       <TouchableOpacity onPress={toggleLike} style={styles.engagementBtn} activeOpacity={0.7}>
-        <Ionicons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? colors.orange : colors.primary} />
+        <Ionicons name={isLiked ? "heart" : "heart-outline"} size={22} color={isLiked ? colors.orange : colors.primary} />
         {likeCount > 0 && <Text style={styles.engagementCount}>{likeCount}</Text>}
       </TouchableOpacity>
       <View style={styles.engagementBtn}>
-        <Ionicons name="chatbubble-outline" size={22} color={colors.primary} />
+        <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
         {comments.length > 0 && <Text style={styles.engagementCount}>{comments.length}</Text>}
       </View>
       <TouchableOpacity style={styles.engagementBtn} activeOpacity={0.7}>
-        <Ionicons name="share-outline" size={22} color={colors.primary} />
+        <Ionicons name="share-outline" size={20} color={colors.primary} />
       </TouchableOpacity>
     </View>
   );
@@ -409,43 +414,47 @@ function MediaPostEngagement({ parentId, parentType, userId }: { parentId: strin
 function MediaPost({ item, authorName, userId, onVideoPress }: MediaPostProps) {
   const [mediaLoading, setMediaLoading] = useState(true);
   const parentType = item.source === "tutorial" ? "tutorial" as const : "media" as const;
+  // Card-inset media width: screen - 2*pagePadding - 2*14px inner margin
+  const cardInnerWidth = SCREEN_WIDTH - spacing.pagePadding * 2 - 28;
 
   return (
     <View style={styles.mediaPost}>
-      {/* Author row */}
+      {/* Author row — small avatar + name bold + timestamp */}
       <View style={styles.mediaAuthorRow}>
-        <Avatar name={authorName} size={32} />
+        <Avatar name={authorName} size={28} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.mediaAuthorName}>{authorName}</Text>
-          <Text style={styles.mediaTimestamp}>{formatTimeAgo(item.uploadedAt)}</Text>
+          <Text style={styles.mediaAuthorLine}>
+            <Text style={styles.mediaAuthorName}>{authorName}</Text>
+            {item.source === "tutorial" && item.title && !item.title.includes("_")
+              ? " posted a tutorial"
+              : " added a photo"}
+          </Text>
         </View>
-        {item.source === "tutorial" && item.title && !item.title.includes("_") ? (
-          <Text style={styles.mediaInlineTitle}>{item.title}</Text>
-        ) : null}
+        <Text style={styles.mediaTimestamp}>{formatTimeAgo(item.uploadedAt)}</Text>
       </View>
 
       {/* Loading shimmer */}
       {mediaLoading && (
-        <View style={styles.mediaShimmer}>
+        <View style={[styles.mediaShimmer, { width: cardInnerWidth }]}>
           <ActivityIndicator color={colors.accent} />
         </View>
       )}
 
-      {/* Media — edge to edge */}
+      {/* Media — inside the card with margin + border-radius (NOT edge-to-edge) */}
       {item.type === "photo" ? (
         <Image
           source={{ uri: item.storageUrl }}
-          style={styles.mediaImage}
+          style={[styles.mediaImage, { width: cardInnerWidth }]}
           resizeMode="cover"
           onLoad={() => setMediaLoading(false)}
         />
       ) : (
         <TouchableOpacity activeOpacity={0.95} onPress={() => onVideoPress(item)}>
           {item.thumbnailUrl ? (
-            <View style={styles.mediaVideo}>
+            <View style={[styles.mediaVideo, { width: cardInnerWidth }]}>
               <Image
                 source={{ uri: item.thumbnailUrl }}
-                style={[styles.mediaVideo, { position: "absolute" }]}
+                style={[styles.mediaVideo, { width: cardInnerWidth, position: "absolute" }]}
                 resizeMode="cover"
                 onLoad={() => setMediaLoading(false)}
               />
@@ -456,7 +465,7 @@ function MediaPost({ item, authorName, userId, onVideoPress }: MediaPostProps) {
           ) : VideoComponent ? (
             <VideoComponent
               source={{ uri: item.storageUrl }}
-              style={styles.mediaVideo}
+              style={[styles.mediaVideo, { width: cardInnerWidth }]}
               resizeMode={ResizeModeEnum?.COVER ?? "cover"}
               shouldPlay
               isLooping
@@ -465,18 +474,22 @@ function MediaPost({ item, authorName, userId, onVideoPress }: MediaPostProps) {
               progressUpdateIntervalMillis={500}
             />
           ) : (
-            <View style={styles.mediaVideoPlaceholder}>
+            <View style={[styles.mediaVideoPlaceholder, { width: cardInnerWidth }]}>
               <Ionicons name="play-circle" size={48} color="rgba(255,255,255,0.8)" />
             </View>
           )}
         </TouchableOpacity>
       )}
 
+      {/* Title for tutorials */}
+      {item.source === "tutorial" && item.title && !item.title.includes("_") && (
+        <View style={styles.mediaTitleRow}>
+          <Text style={styles.mediaTitleText}>{item.title}</Text>
+        </View>
+      )}
+
       {/* Likes, comments, share */}
       <MediaPostEngagement parentId={item.id} parentType={parentType} userId={userId} />
-
-      {/* Divider */}
-      <View style={styles.mediaDivider} />
     </View>
   );
 }
@@ -509,20 +522,18 @@ export default function ParticipantHome() {
   );
   const nearestSessionId = sorted2[0]?.id ?? null;
 
-  // All active announcements (newest first)
-
   function navigateToSession(id: string) {
     router.push(`/session/${id}` as Parameters<typeof router.push>[0]);
   }
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Header */}
+      {/* Header — mockup 20 line 8-14 */}
       <View style={styles.header}>
         <Text style={styles.wordmark}>Rangtaal</Text>
         <View style={styles.headerRight}>
           <NotificationBellIcon />
-          <Avatar name={userName} size={36} />
+          <Avatar name={userName} size={32} />
         </View>
       </View>
 
@@ -545,7 +556,7 @@ export default function ParticipantHome() {
           <NoSessionCard />
         )}
 
-        {/* 2b. Admin: Post Announcement button */}
+        {/* 2. Admin: Post Announcement button — gold outline */}
         {isAdmin && (
           <TouchableOpacity
             style={styles.postAnnouncementBtn}
@@ -571,7 +582,7 @@ export default function ParticipantHome() {
               );
             }}
           >
-            <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
+            <Ionicons name="megaphone-outline" size={16} color={colors.accent} />
             <Text style={styles.postAnnouncementText}>Post Announcement</Text>
           </TouchableOpacity>
         )}
@@ -602,6 +613,24 @@ export default function ParticipantHome() {
           userId={userId}
         />
 
+        {/* 6. Divider before feed — mockup 20 line 78 */}
+        {feedItems.length > 0 && <View style={styles.feedDivider} />}
+
+        {/* 7. "RECENT" section label — mockup 08 line 43 */}
+        {feedItems.length > 0 && (
+          <Text style={styles.recentLabel}>RECENT</Text>
+        )}
+
+        {/* 8. Gallery feed — white cards with rounded corners */}
+        {feedItems.map((item) => (
+          <MediaPost
+            key={item.id}
+            item={item}
+            authorName={userNameMap[item.uploadedBy] ?? "User"}
+            userId={userId}
+            onVideoPress={setActiveVideo}
+          />
+        ))}
       </ScrollView>
 
       {/* Video player modal */}
@@ -629,16 +658,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.pageBackground,
   },
+
+  // Header — mockup 20 lines 8-14
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.pagePadding,
-    paddingVertical: spacing.sm + 4,
+    paddingTop: 20,
+    paddingBottom: 8,
     backgroundColor: colors.pageBackground,
   },
   wordmark: {
-    fontSize: typography.fontSize.heroTitle,
+    fontSize: 26,
     fontWeight: typography.fontWeight.extraBold,
     color: colors.primary,
     letterSpacing: -0.5,
@@ -646,7 +678,7 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    gap: 12,
   },
   scroll: {
     flex: 1,
@@ -655,71 +687,88 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
   },
 
-  // Hero card
+  // ── Hero card — mockup 20 lines 19-34 ──
+  // bg #342145, 16px borderRadius, 16px padding
   hero: {
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.base,
-    backgroundColor: colors.heroGradientStart,
-    borderRadius: spacing.cardRadiusLg,
-    padding: spacing.cardPaddingLg,
+    marginTop: 8,
+    marginBottom: 12,
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    padding: 16,
   },
+  // "NEXT TUESDAY" — 10px, gold, bold, uppercase, letter-spacing 1.5
   heroLabel: {
-    fontSize: typography.fontSize.label,
+    fontSize: 10,
     fontWeight: typography.fontWeight.bold,
-    color: colors.orange,
-    letterSpacing: typography.letterSpacing.labelWide,
-    marginBottom: spacing.sm,
+    color: colors.accent,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   heroRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: spacing.sm,
+    marginTop: 6,
   },
   heroDateBlock: {
     flex: 1,
     marginRight: spacing.base,
   },
+  // "April 21 · 7:30 PM" — 17px, bold, white
   heroDate: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: typography.fontWeight.bold,
-    color: colors.card,
-    marginBottom: 2,
+    color: "#FFFFFF",
   },
-  heroTime: {
-    fontSize: typography.fontSize.body,
-    color: "rgba(255,255,255,0.75)",
-    marginBottom: 2,
-  },
+  // "Maple Room, Roselle" — 12px, white 50% opacity
   heroLocation: {
-    fontSize: typography.fontSize.caption,
-    color: "rgba(255,255,255,0.60)",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    marginTop: 2,
   },
   heroCountBlock: {
     alignItems: "center",
   },
+  // "8" — 24px, extra-bold, gold
   heroCount: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: typography.fontWeight.extraBold,
-    color: colors.green,
-    lineHeight: 40,
+    color: colors.accent,
   },
+  // "Going" — 9px, white 50%, uppercase
   heroCountLabel: {
-    fontSize: typography.fontSize.caption,
-    color: "rgba(255,255,255,0.70)",
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 9,
+    color: "rgba(255,255,255,0.5)",
+    textTransform: "uppercase",
   },
-  heroAvatars: {
-    marginBottom: spacing.sm,
+  // RSVP button — gold bg, 10px radius, 10px padding, centered
+  heroRsvpBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: 10,
   },
-  heroButton: {
-    marginTop: spacing.sm,
+  heroRsvpBtnConfirmed: {
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+  },
+  // "RSVP →" — 13px, bold, white
+  heroRsvpText: {
+    fontSize: 13,
+    fontWeight: typography.fontWeight.bold,
+    color: "#FFFFFF",
+  },
+  heroRsvpTextConfirmed: {
+    color: colors.accent,
   },
 
   // No session
   noSessionCard: {
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.base,
+    marginBottom: 12,
     alignItems: "center",
     paddingVertical: spacing.xl,
   },
@@ -735,144 +784,200 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Post Announcement button (admin only)
+  // ── Post Announcement button (admin) — gold outline, subtle ──
   postAnnouncementBtn: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.base,
-    backgroundColor: colors.primary,
-    borderRadius: spacing.cardRadius,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    gap: spacing.xs,
+    marginBottom: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 6,
   },
   postAnnouncementText: {
-    fontSize: typography.fontSize.body,
+    fontSize: 13,
     fontWeight: typography.fontWeight.semiBold,
-    color: "#FFFFFF",
+    color: colors.accent,
   },
 
-  // Announcement card
+  // ── Announcement card — mockup 20 lines 37-46 ──
+  // bg #FFF6E0, border-left 3px gold, 14px radius, 14px padding
   announcementCard: {
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.primary,
+    marginBottom: 12,
+    backgroundColor: colors.announcementBg,
     borderRadius: 14,
-    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent,
+    padding: 14,
+  },
+  announcementInner: {
     flexDirection: "row",
     alignItems: "flex-start",
+    gap: 10,
   },
+  // 📢 emoji — 18px
   announcementIcon: {
-    marginRight: 10,
-    marginTop: 2,
+    fontSize: 18,
+    marginTop: 1,
   },
+  // Title — 14px, semiBold, dark plum #342145
   announcementText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    lineHeight: 22,
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
+    lineHeight: 20,
   },
+  // Meta — 11px, gray #8B8FA3
   announcementMeta: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.6)",
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 6,
   },
   announcementDismiss: {
     padding: 2,
     alignSelf: "flex-start",
   },
 
-  // Focus card
+  // ── Focus card — mockup 20 lines 48-59 ──
   focusCard: {
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.base,
+    marginBottom: 12,
     backgroundColor: colors.primary,
-    borderRadius: spacing.cardRadiusLg,
-    padding: spacing.cardPaddingLg,
+    borderRadius: 14,
+    padding: 14,
   },
   focusLabel: {
-    fontSize: typography.fontSize.label,
+    fontSize: 10,
     fontWeight: typography.fontWeight.bold,
     color: colors.accent,
-    letterSpacing: typography.letterSpacing.labelWide,
-    marginBottom: spacing.sm,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   focusTopic: {
     fontSize: 18,
     fontWeight: typography.fontWeight.bold,
-    color: colors.card,
-    marginBottom: spacing.xs,
+    color: "#FFFFFF",
+    marginTop: 6,
   },
   focusDescription: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.70)",
-    lineHeight: typography.lineHeight.relaxed,
+    color: "rgba(255,255,255,0.6)",
+    marginTop: 4,
+    lineHeight: 18,
   },
 
-  // Quick Actions
+  // ── Quick Actions — mockup 20 lines 62-75 ──
+  // White cards, 12px radius, 12px padding, centered, shadow
   quickActionsRow: {
     flexDirection: "row",
     marginHorizontal: spacing.pagePadding,
-    marginBottom: spacing.base,
-    gap: spacing.sm,
+    marginBottom: 16,
+    gap: 8,
   },
   quickTile: {
     flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: spacing.cardRadius,
-    paddingVertical: spacing.base,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: "center",
-    gap: spacing.xs,
+    gap: 4,
     ...shadows.card,
   },
+  // 11px, semiBold, #342145
   quickTileLabel: {
-    fontSize: typography.fontSize.caption,
+    fontSize: 11,
     fontWeight: typography.fontWeight.semiBold,
     color: colors.primary,
     textAlign: "center",
   },
 
-  // Section header
-  // Media feed posts
-  mediaPost: {
-    marginTop: 8,
+  // ── Feed divider — mockup 20 line 78 ──
+  feedDivider: {
+    height: 6,
+    backgroundColor: colors.border,
   },
+
+  // ── "RECENT" label — mockup 08 line 43 ──
+  recentLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: typography.fontWeight.semiBold,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    marginHorizontal: spacing.pagePadding,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+
+  // ── Media feed posts — mockup 08 lines 46-110 ──
+  // White cards with 14px border-radius, shadow, media INSIDE with margin + radius
+  mediaPost: {
+    marginHorizontal: spacing.pagePadding,
+    marginBottom: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    overflow: "hidden",
+    ...shadows.card,
+  },
+  // Author row: 12px 14px padding, flex, gap 10
   mediaAuthorRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  mediaAuthorName: {
-    fontSize: 14,
-    fontWeight: "600",
+  // "Ankita posted a tutorial" — 13px, #342145
+  mediaAuthorLine: {
+    fontSize: 13,
     color: colors.primary,
   },
+  mediaAuthorName: {
+    fontWeight: typography.fontWeight.semiBold,
+  },
+  // Timestamp — 11px, #8B8FA3, pushed to right
   mediaTimestamp: {
     fontSize: 11,
     color: colors.textSecondary,
+    marginLeft: "auto",
+    flexShrink: 0,
   },
+  // Loading shimmer
   mediaShimmer: {
-    width: "100%",
-    height: 200,
+    height: 180,
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 10,
     backgroundColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
+  // Photo — inside card with margin + border-radius
   mediaImage: {
-    width: Dimensions.get("window").width,
     aspectRatio: 4 / 3,
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 10,
   },
+  // Video — inside card with margin + border-radius
   mediaVideo: {
-    width: Dimensions.get("window").width,
     aspectRatio: 3 / 4,
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 10,
+    overflow: "hidden",
   },
   mediaVideoPlaceholder: {
-    width: Dimensions.get("window").width,
     aspectRatio: 16 / 9,
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 10,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
@@ -882,17 +987,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  mediaInlineTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.accent,
+  // Title row below media for tutorials
+  mediaTitleRow: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
   },
+  mediaTitleText: {
+    fontSize: 15,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.primary,
+  },
+  // Engagement row — inside card
   engagementRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
   },
   engagementBtn: {
     flexDirection: "row",
@@ -901,11 +1012,7 @@ const styles = StyleSheet.create({
   },
   engagementCount: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: typography.fontWeight.semiBold,
     color: colors.primary,
-  },
-  mediaDivider: {
-    height: 1,
-    backgroundColor: colors.border,
   },
 });

@@ -22,6 +22,7 @@ export const colors = {
 
   // Semantic backgrounds
   paymentBannerBg: "#FFF3D0",
+  announcementBg: "#FFF6E0",   // Warm cream — announcement card
   cancelledBg: "#FFEBEE",
   successBg: "#E8F5EE",
   orangeBg: "#FFF0E8",
